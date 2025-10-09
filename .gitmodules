@@ -1,0 +1,3 @@
+[submodule "nuGL2"]
+	path = nuGL2
+	url = https://github.com/ZerimGH/nuGL2.git
