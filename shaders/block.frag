@@ -2,6 +2,8 @@
 
 out vec4 fragColor;
 
+in vec2 fTex;
+
 void main() {
-  fragColor = vec4(1, 0, 0, 1);
+  fragColor = vec4(fTex.x, 0, fTex.y, 1);
 }
