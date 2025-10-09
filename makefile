@@ -4,7 +4,7 @@ SRC_DIR = src
 NU_GL_DIR = nuGL2
 BUILD_DIR = build
 
-SRCS = $(SRC_DIR)/main.c $(NU_GL_DIR)/nuGL.c
+SRCS = $(SRC_DIR)/*.c $(NU_GL_DIR)/nuGL.c
 TARGET = main
 
 CFLAGS = -Wall -I. -I$(NU_GL_DIR)
