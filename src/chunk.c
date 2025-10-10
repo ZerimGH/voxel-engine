@@ -53,8 +53,8 @@ void generate_chunk(Chunk *chunk) {
 }
 
 typedef struct {
-    GLfloat pos[3];
-    GLfloat tex[2];
+  GLfloat pos[3];
+  GLfloat tex[2];
 } BlockVertex;
 
 static const int axis_uv[3][2] = {{1, 2}, {0, 2}, {0, 1}};
@@ -65,8 +65,7 @@ static const int dims[3] = {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_LENGTH};
 // 1 = Transparent
 // 2 = Solid
 static inline int block_render_type(BlockType t) {
-  if (t == BlockAir)
-    return 0;
+  if (t == BlockAir) return 0;
   /*
   if (t == BlockWater || t == BlockGlass)
     return 1;
@@ -75,11 +74,13 @@ static inline int block_render_type(BlockType t) {
 }
 
 // Write a face to a vertex buffer
-static inline void emit_face(BlockVertex *target, size_t *count, float p[4][3],
-                             float s[4], float t[4], bool face_positive,
-                             bool flip_winding) {
-#define EMIT(i)                                                                \
-  target[(*count)++] = (BlockVertex){{p[i][0], p[i][1], p[i][2]}, {s[i], t[i]}}
+static inline void emit_face(BlockVertex *target, size_t *count, float p[4][3], float s[4], float t[4], bool face_positive, bool flip_winding) {
+#define EMIT(i)                                                                                                                                                                                        \
+  target[(*count)++] = (BlockVertex) {                                                                                                                                                                 \
+    {p[i][0], p[i][1], p[i][2]}, {                                                                                                                                                                     \
+      s[i], t[i]                                                                                                                                                                                       \
+    }                                                                                                                                                                                                  \
+  }
 
   static const unsigned int faces[2][6] = {
       {0, 1, 2, 2, 1, 3}, // standard winding
@@ -95,13 +96,19 @@ static inline void emit_face(BlockVertex *target, size_t *count, float p[4][3],
   if (!face_positive) // invert winding for negative direction faces
     indices = (indices == faces[0]) ? faces[1] : faces[0];
 
-  for (int i = 0; i < 6; i++)
-    EMIT(indices[i]);
+  for (int i = 0; i < 6; i++) EMIT(indices[i]);
 
 #undef EMIT
 }
 
-typedef struct { GLfloat pos[3]; GLfloat tex[2]; } Vertex; size_t vertex_num = 2; size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat)}; size_t vertex_counts[] = {3, 2}; GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT};
+typedef struct {
+  GLfloat pos[3];
+  GLfloat tex[2];
+} Vertex;
+size_t vertex_num = 2;
+size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat)};
+size_t vertex_counts[] = {3, 2};
+GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT};
 
 // Greedy meshing
 void mesh_chunk(Chunk *chunk) {
@@ -113,9 +120,9 @@ void mesh_chunk(Chunk *chunk) {
   // Allocate array of mesh vertices
   size_t max_verts = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_LENGTH * 6;
   BlockVertex *verts = malloc(sizeof(BlockVertex) * max_verts);
-  //BlockVertex *tverts = malloc(sizeof(BlockVertex) * max_verts);
+  // BlockVertex *tverts = malloc(sizeof(BlockVertex) * max_verts);
   size_t vert_count = 0;
-  //size_t tvert_count = 0;
+  // size_t tvert_count = 0;
 
   // Chunk global coordinates
   int corner_x = chunk->coords[0] * CHUNK_WIDTH;
@@ -144,18 +151,10 @@ void mesh_chunk(Chunk *chunk) {
           coords[axis] = slice;
 
           // Get the current, and the next block in this axis
-          BlockType blockA =
-              (coords[axis] >= 0 && coords[axis] < dims[axis])
-                  ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])]
-                        .type
-                  : BlockAir;
+          BlockType blockA = (coords[axis] >= 0 && coords[axis] < dims[axis]) ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])].type : BlockAir;
 
           coords[axis] = slice + 1;
-          BlockType blockB =
-              (coords[axis] >= 0 && coords[axis] < dims[axis])
-                  ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])]
-                        .type
-                  : BlockAir;
+          BlockType blockB = (coords[axis] >= 0 && coords[axis] < dims[axis]) ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])].type : BlockAir;
 
           int ra = block_render_type(blockA);
           int rb = block_render_type(blockB);
@@ -186,9 +185,7 @@ void mesh_chunk(Chunk *chunk) {
 
           // Merge in one direction
           size_t width = 1;
-          while (x + width < size_u &&
-                 mask[y * size_u + x + width] == current &&
-                 face_positive_mask[y * size_u + x + width] == facePositive) {
+          while (x + width < size_u && mask[y * size_u + x + width] == current && face_positive_mask[y * size_u + x + width] == facePositive) {
             width++;
           }
 
@@ -197,15 +194,12 @@ void mesh_chunk(Chunk *chunk) {
           bool stop = false;
           while (y + height < size_v && !stop) {
             for (size_t k = 0; k < width; k++) {
-              if (mask[(y + height) * size_u + x + k] != current ||
-                  face_positive_mask[(y + height) * size_u + x + k] !=
-                      facePositive) {
+              if (mask[(y + height) * size_u + x + k] != current || face_positive_mask[(y + height) * size_u + x + k] != facePositive) {
                 stop = true;
                 break;
               }
             }
-            if (!stop)
-              height++;
+            if (!stop) height++;
           }
 
           int base[3] = {0, 0, 0}; // Quad position
@@ -219,15 +213,10 @@ void mesh_chunk(Chunk *chunk) {
           dv[v_axis] = (int)height;
 
           // Quad corners
-          float p[4][3] = {
-              {base[0] + corner_x, base[1] + corner_y, base[2] + corner_z},
-              {base[0] + du[0] + corner_x, base[1] + du[1] + corner_y,
-               base[2] + du[2] + corner_z},
-              {base[0] + dv[0] + corner_x, base[1] + dv[1] + corner_y,
-               base[2] + dv[2] + corner_z},
-              {base[0] + du[0] + dv[0] + corner_x,
-               base[1] + du[1] + dv[1] + corner_y,
-               base[2] + du[2] + dv[2] + corner_z}};
+          float p[4][3] = {{base[0] + corner_x, base[1] + corner_y, base[2] + corner_z},
+                           {base[0] + du[0] + corner_x, base[1] + du[1] + corner_y, base[2] + du[2] + corner_z},
+                           {base[0] + dv[0] + corner_x, base[1] + dv[1] + corner_y, base[2] + dv[2] + corner_z},
+                           {base[0] + du[0] + dv[0] + corner_x, base[1] + du[1] + dv[1] + corner_y, base[2] + du[2] + dv[2] + corner_z}};
           // Is the face pointing in the positive direction in its axis?
           bool face_positive = face_positive_mask[y * size_u + x];
 
@@ -303,6 +292,5 @@ void mesh_chunk(Chunk *chunk) {
   // Mark as meshed
   chunk->meshed = true;
   free(verts);
-  //free(tverts);
+  // free(tverts);
 }
-

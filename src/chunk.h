@@ -13,8 +13,8 @@
 
 // Includes
 #include "block.h"
-#include "nuGL.h"
 #include "noise.h"
+#include "nuGL.h"
 #include <stdio.h>
 #include <stdlib.h>
 
