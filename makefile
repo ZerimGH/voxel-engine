@@ -7,7 +7,7 @@ BUILD_DIR = build
 SRCS = $(SRC_DIR)/*.c $(NU_GL_DIR)/nuGL.c
 TARGET = main
 
-CFLAGS = -Wall -I. -I$(NU_GL_DIR)
+CFLAGS = -Wall -I. -I$(NU_GL_DIR) -O3
 
 linux:
 	mkdir -p $(BUILD_DIR)

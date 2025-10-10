@@ -3,6 +3,7 @@
 #include "nuGL.h"
 #include "chunk.h"
 #include "camera.h"
+#include "profiler.h"
 
 #define SENS 0.0015f
 #define MOVE_SPEED 0.3f
@@ -14,7 +15,10 @@ int main(void) {
   nu_register_uniform(program, "uMVP", GL_FLOAT_MAT4);
   Chunk *chunk = create_chunk(0, 0, 0);
   generate_chunk(chunk);
+  START_TIMER(mesh_chunk);
   mesh_chunk(chunk);
+  END_TIMER(mesh_chunk);
+  nu_print_mesh(chunk->mesh);
 
   // Create a camera
   Camera *cam = create_camera(0.1, 200, 90.f);
