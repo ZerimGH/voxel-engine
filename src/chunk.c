@@ -1,6 +1,6 @@
 #include "chunk.h"
 
-#define GREEDY
+// #define GREEDY
 
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   Chunk *chunk = calloc(1, sizeof(Chunk));
@@ -19,6 +19,18 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   return chunk;
 }
 
+void print_chunk(Chunk *chunk) {
+  if (!chunk) return (void)printf("Chunk: (null)\n");
+  printf("Chunk: %p {\n", chunk);
+  printf("  coords: (%d, %d, %d)\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
+  printf("  blocks: %p\n", chunk->blocks);
+  printf("  generated: %d\n", chunk->generated);
+  printf("  num_blocks: %zu\n", chunk->num_blocks);
+  nu_print_mesh(chunk->mesh, 2);
+  printf("  meshed: %d\n", chunk->meshed);
+  printf("}\n");
+}
+
 void destroy_chunk(Chunk **chunk) {
   if (!chunk || !(*chunk)) return;
   if ((*chunk)->mesh) nu_destroy_mesh(&(*chunk)->mesh);
@@ -26,6 +38,7 @@ void destroy_chunk(Chunk **chunk) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
   }
+  **chunk = (Chunk){0};
   *chunk = NULL;
 }
 
@@ -47,7 +60,17 @@ void generate_chunk(Chunk *chunk) {
       int terrain_height = octave_noise_2d(gx, gz, 3, 0.5, 1.6, 128, 1) * 50 + 50;
       for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
         int gy = ccy + y;
-        BlockType block = gy <= terrain_height ? BlockSolid : BlockAir;
+        BlockType block = BlockAir;
+        if (gy <= terrain_height) {
+          int dist_from_surface = terrain_height - gy;
+          if (dist_from_surface == 0) {
+            block = BlockGrass;
+          } else if (dist_from_surface <= 5) {
+            block = BlockDirt;
+          } else {
+            block = BlockStone;
+          }
+        }
         size_t idx = CHUNK_INDEX(x, y, z);
         chunk->blocks[idx] = (Block){.type = block};
       }
@@ -59,7 +82,14 @@ void generate_chunk(Chunk *chunk) {
 typedef struct {
   GLfloat pos[3];
   GLfloat tex[2];
-} BlockVertex;
+  GLint side_index;
+  GLint block_type;
+} Vertex;
+
+size_t vertex_num = 4;
+size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint), sizeof(GLint)};
+size_t vertex_counts[] = {3, 2, 1, 1};
+GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT, GL_INT, GL_INT};
 
 #ifdef GREEDY
 
@@ -80,12 +110,10 @@ static inline int block_render_type(BlockType t) {
 }
 
 // Write a face to a vertex buffer
-static inline void emit_face(BlockVertex *target, size_t *count, float p[4][3], float s[4], float t[4], bool face_positive, bool flip_winding) {
+static inline void emit_face(Vertex *target, size_t *count, float p[4][3], float s[4], float t[4], bool face_positive, bool flip_winding, int side_index, int block_type) {
 #define EMIT(i)                                                                                                                                                                                        \
-  target[(*count)++] = (BlockVertex) {                                                                                                                                                                 \
-    {p[i][0], p[i][1], p[i][2]}, {                                                                                                                                                                     \
-      s[i], t[i]                                                                                                                                                                                       \
-    }                                                                                                                                                                                                  \
+  target[(*count)++] = (Vertex) {                                                                                                                                                                      \
+    {roundf(p[i][0]), roundf(p[i][1]), roundf(p[i][2])}, {s[i], t[i]}, side_index, block_type                                                                                                                                  \
   }
 
   static const unsigned int faces[2][6] = {
@@ -107,26 +135,17 @@ static inline void emit_face(BlockVertex *target, size_t *count, float p[4][3], 
 #undef EMIT
 }
 
-typedef struct {
-  GLfloat pos[3];
-  GLfloat tex[2];
-} Vertex;
-size_t vertex_num = 2;
-size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat)};
-size_t vertex_counts[] = {3, 2};
-GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT};
-
 // Greedy meshing
 void mesh_chunk(Chunk *chunk) {
 
-  if (!chunk || !chunk->generated || !chunk->blocks) return;
+  if (!chunk || !chunk->generated || !chunk->blocks || chunk->meshed) return;
   if (chunk->mesh) nu_destroy_mesh(&chunk->mesh);
   chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
 
   // Allocate array of mesh vertices
   size_t max_verts = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_LENGTH * 6;
-  BlockVertex *verts = malloc(sizeof(BlockVertex) * max_verts);
-  // BlockVertex *tverts = malloc(sizeof(BlockVertex) * max_verts);
+  Vertex *verts = malloc(sizeof(Vertex) * max_verts);
+  // Vertex *tverts = malloc(sizeof(Vertex) * max_verts);
   size_t vert_count = 0;
   // size_t tvert_count = 0;
 
@@ -248,19 +267,26 @@ void mesh_chunk(Chunk *chunk) {
             t[3] = (float)height;
           }
 
-          // Use verts for solid types, and tverts for transparent types
-          /*
-          BlockVertex *target =
-              block_render_type(current) == 2 ? verts : tverts;
-          size_t *target_count =
-              block_render_type(current) == 2 ? &vert_count : &tvert_count;
-              */
-          BlockVertex *target = verts;
+          Vertex *target = verts;
           size_t *target_count = &vert_count;
+
+          // Determine side index
+          int side_index = -1;
+          switch (axis) {
+          case 0:
+            side_index = face_positive ? 3 : 2;
+            break; // X axis
+          case 1:
+            side_index = face_positive ? 4 : 5;
+            break; // Y axis
+          case 2:
+            side_index = face_positive ? 0 : 1;
+            break; // Z axis
+          }
 
           // Generate vertices for mesh
           bool flip_winding = (axis == 1); // flip Y-axis to correct orientation
-          emit_face(target, target_count, p, s, t, face_positive, flip_winding);
+          emit_face(target, target_count, p, s, t, face_positive, flip_winding, side_index, current);
 
           // Remove quad from mask
           for (size_t i = 0; i < height; i++) {
@@ -282,92 +308,72 @@ void mesh_chunk(Chunk *chunk) {
 
   // Upload vertices to meshes
   if (vert_count > 0) {
-    nu_mesh_add_bytes(chunk->mesh, vert_count * sizeof(BlockVertex), verts);
+    nu_mesh_add_bytes(chunk->mesh, vert_count * sizeof(Vertex), verts);
     nu_send_mesh(chunk->mesh);
     nu_free_mesh(chunk->mesh);
   }
-  /*
-  if (tvert_count > 0) {
-    nu_mesh_add_bytes(chunk->mesh_transparent, tvert_count * sizeof(BlockVertex), tverts);
-    nu_send_mesh(chunk->mesh_transparent);
-    nu_free_mesh(chunk->mesh_transparent);
-  } else {
-    chunk->mesh_transparent.bytes_added = 0;
-  }
-  */
   // Mark as meshed
   chunk->meshed = true;
   free(verts);
-  // free(tverts);
 }
 #else
 
-typedef struct {
-  GLfloat pos[3];
-  GLfloat tex[2];
-} Vertex;
-
-size_t vertex_num = 2;
-size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat)};
-size_t vertex_counts[] = {3, 2};
-GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT};
-
 Vertex cube[] = {
-    // Front face
-    {{0, 0, 1}, {0, 0}},
-    {{1, 0, 1}, {1, 0}},
-    {{1, 1, 1}, {1, 1}},
-    {{0, 0, 1}, {0, 0}},
-    {{1, 1, 1}, {1, 1}},
-    {{0, 1, 1}, {0, 1}},
+    // Front face (+Z)
+    {{0, 0, 1}, {0, 0}, 0, 0},
+    {{1, 0, 1}, {1, 0}, 0, 0},
+    {{1, 1, 1}, {1, 1}, 0, 0},
+    {{0, 0, 1}, {0, 0}, 0, 0},
+    {{1, 1, 1}, {1, 1}, 0, 0},
+    {{0, 1, 1}, {0, 1}, 0, 0},
 
-    // Back face
-    {{1, 0, 0}, {0, 0}},
-    {{0, 0, 0}, {1, 0}},
-    {{0, 1, 0}, {1, 1}},
-    {{1, 0, 0}, {0, 0}},
-    {{0, 1, 0}, {1, 1}},
-    {{1, 1, 0}, {0, 1}},
+    // Back face (-Z)
+    {{1, 0, 0}, {0, 0}, 1, 0},
+    {{0, 0, 0}, {1, 0}, 1, 0},
+    {{0, 1, 0}, {1, 1}, 1, 0},
+    {{1, 0, 0}, {0, 0}, 1, 0},
+    {{0, 1, 0}, {1, 1}, 1, 0},
+    {{1, 1, 0}, {0, 1}, 1, 0},
 
-    // Left face
-    {{0, 0, 0}, {0, 0}},
-    {{0, 0, 1}, {1, 0}},
-    {{0, 1, 1}, {1, 1}},
-    {{0, 0, 0}, {0, 0}},
-    {{0, 1, 1}, {1, 1}},
-    {{0, 1, 0}, {0, 1}},
+    // Left face (-X)
+    {{0, 0, 0}, {0, 0}, 2, 0},
+    {{0, 0, 1}, {1, 0}, 2, 0},
+    {{0, 1, 1}, {1, 1}, 2, 0},
+    {{0, 0, 0}, {0, 0}, 2, 0},
+    {{0, 1, 1}, {1, 1}, 2, 0},
+    {{0, 1, 0}, {0, 1}, 2, 0},
 
-    // Right face
-    {{1, 0, 1}, {0, 0}},
-    {{1, 0, 0}, {1, 0}},
-    {{1, 1, 0}, {1, 1}},
-    {{1, 0, 1}, {0, 0}},
-    {{1, 1, 0}, {1, 1}},
-    {{1, 1, 1}, {0, 1}},
+    // Right face (+X)
+    {{1, 0, 1}, {0, 0}, 3, 0},
+    {{1, 0, 0}, {1, 0}, 3, 0},
+    {{1, 1, 0}, {1, 1}, 3, 0},
+    {{1, 0, 1}, {0, 0}, 3, 0},
+    {{1, 1, 0}, {1, 1}, 3, 0},
+    {{1, 1, 1}, {0, 1}, 3, 0},
 
-    // Top face
-    {{0, 1, 1}, {0, 0}},
-    {{1, 1, 1}, {1, 0}},
-    {{1, 1, 0}, {1, 1}},
-    {{0, 1, 1}, {0, 0}},
-    {{1, 1, 0}, {1, 1}},
-    {{0, 1, 0}, {0, 1}},
+    // Top face (+Y)
+    {{0, 1, 1}, {0, 0}, 4, 0},
+    {{1, 1, 1}, {1, 0}, 4, 0},
+    {{1, 1, 0}, {1, 1}, 4, 0},
+    {{0, 1, 1}, {0, 0}, 4, 0},
+    {{1, 1, 0}, {1, 1}, 4, 0},
+    {{0, 1, 0}, {0, 1}, 4, 0},
 
-    // Bottom face
-    {{0, 0, 0}, {0, 0}},
-    {{1, 0, 0}, {1, 0}},
-    {{1, 0, 1}, {1, 1}},
-    {{0, 0, 0}, {0, 0}},
-    {{1, 0, 1}, {1, 1}},
-    {{0, 0, 1}, {0, 1}},
+    // Bottom face (-Y)
+    {{0, 0, 0}, {0, 0}, 5, 0},
+    {{1, 0, 0}, {1, 0}, 5, 0},
+    {{1, 0, 1}, {1, 1}, 5, 0},
+    {{0, 0, 0}, {0, 0}, 5, 0},
+    {{1, 0, 1}, {1, 1}, 5, 0},
+    {{0, 0, 1}, {0, 1}, 5, 0},
 };
 
 static inline bool is_solid(BlockType t) {
   return t != BlockAir;
 }
 
-static void chunk_add_cube(Chunk *chunk, BlockType neighbours[6], size_t x, size_t y, size_t z) {
-  if (!chunk || !chunk->mesh) return;
+static void chunk_add_cube(Chunk *chunk, BlockType neighbours[6], size_t x, size_t y, size_t z, BlockType block_type) {
+  if (!chunk || !chunk->mesh || block_type == BlockAir) return;
 
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
@@ -383,6 +389,7 @@ static void chunk_add_cube(Chunk *chunk, BlockType neighbours[6], size_t x, size
       face_vertices[i].pos[0] += ccx + x;
       face_vertices[i].pos[1] += ccy + y;
       face_vertices[i].pos[2] += ccz + z;
+      face_vertices[i].block_type = block_type;
     }
 
     nu_mesh_add_bytes(chunk->mesh, sizeof(face_vertices), face_vertices);
@@ -415,7 +422,7 @@ void mesh_chunk(Chunk *chunk) {
         if (is_solid(block)) {
           BlockType neighbours[6] = {BlockAir};
           get_neighbours(chunk, neighbours, x, y, z);
-          chunk_add_cube(chunk, neighbours, x, y, z);
+          chunk_add_cube(chunk, neighbours, x, y, z, block);
         }
       }
     }

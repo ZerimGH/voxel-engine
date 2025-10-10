@@ -14,6 +14,7 @@
 // Includes
 #include "block.h"
 #include "noise.h"
+#define NUGL_DEBUG
 #include "nuGL.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +31,7 @@ typedef struct {
 
 // Function prototypes
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z);
+void print_chunk(Chunk *chunk);
 void destroy_chunk(Chunk **chunk);
 void generate_chunk(Chunk *chunk);
 void mesh_chunk(Chunk *chunk);
