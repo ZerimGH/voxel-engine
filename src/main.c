@@ -1,87 +1,20 @@
 #include <stdio.h>
 #define NUGL_DEBUG
 #include "nuGL.h"
+#include "chunk.h"
 #include "camera.h"
 
 #define SENS 0.0015f
-#define MOVE_SPEED 0.03f
-
-typedef struct {
-  GLfloat pos[3];
-  GLfloat tex[2];
-} Vertex;
-
-size_t vertex_num_components = 2;
-size_t vertex_component_sizes[] = {sizeof(GLfloat), sizeof(GLfloat)};
-size_t vertex_component_counts[] = {3, 2};
-GLenum vertex_component_types[] = {GL_FLOAT, GL_FLOAT};
+#define MOVE_SPEED 0.3f
 
 int main(void) {
   nu_Window *window = nu_create_window(600, 600, NULL, NULL);
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   nu_Program *program = nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
   nu_register_uniform(program, "uMVP", GL_FLOAT_MAT4);
-  nu_Mesh *mesh = nu_create_mesh(vertex_num_components, vertex_component_sizes, vertex_component_counts, vertex_component_types);
-  // Upload vertices of a cube to the mesh
-  Vertex cube[] = {
-     // Front face
-    {{0, 0, 1}, {0, 0}},
-    {{1, 0, 1}, {1, 0}},
-    {{1, 1, 1}, {1, 1}},
-
-    {{0, 0, 1}, {0, 0}},
-    {{1, 1, 1}, {1, 1}},
-    {{0, 1, 1}, {0, 1}},
-
-    // Back face
-    {{1, 0, 0}, {0, 0}},
-    {{0, 0, 0}, {1, 0}},
-    {{0, 1, 0}, {1, 1}},
-
-    {{1, 0, 0}, {0, 0}},
-    {{0, 1, 0}, {1, 1}},
-    {{1, 1, 0}, {0, 1}},
-
-    // Left face
-    {{0, 0, 0}, {0, 0}},
-    {{0, 0, 1}, {1, 0}},
-    {{0, 1, 1}, {1, 1}},
-
-    {{0, 0, 0}, {0, 0}},
-    {{0, 1, 1}, {1, 1}},
-    {{0, 1, 0}, {0, 1}},
-
-    // Right face
-    {{1, 0, 1}, {0, 0}},
-    {{1, 0, 0}, {1, 0}},
-    {{1, 1, 0}, {1, 1}},
-
-    {{1, 0, 1}, {0, 0}},
-    {{1, 1, 0}, {1, 1}},
-    {{1, 1, 1}, {0, 1}},
-
-    // Top face
-    {{0, 1, 1}, {0, 0}},
-    {{1, 1, 1}, {1, 0}},
-    {{1, 1, 0}, {1, 1}},
-
-    {{0, 1, 1}, {0, 0}},
-    {{1, 1, 0}, {1, 1}},
-    {{0, 1, 0}, {0, 1}},
-
-    // Bottom face
-    {{0, 0, 0}, {0, 0}},
-    {{1, 0, 0}, {1, 0}},
-    {{1, 0, 1}, {1, 1}},
-
-    {{0, 0, 0}, {0, 0}},
-    {{1, 0, 1}, {1, 1}},
-    {{0, 0, 1}, {0, 1}}, 
-  };
-  nu_mesh_add_bytes(mesh, sizeof(cube), cube);
-  nu_send_mesh(mesh);
-  nu_free_mesh(mesh);
-  nu_print_mesh(mesh);
+  Chunk *chunk = create_chunk(0, 0, 0);
+  generate_chunk(chunk);
+  mesh_chunk(chunk);
 
   // Create a camera
   Camera *cam = create_camera(0.1, 200, 90.f);
@@ -108,12 +41,12 @@ int main(void) {
     glEnable(GL_CULL_FACE);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     nu_use_program(program);
-    nu_render_mesh(mesh);
+    nu_render_mesh(chunk->mesh);
     nu_end_frame(window);
   }
   nu_destroy_window(&window);
   nu_destroy_program(&program);
-  nu_destroy_mesh(&mesh);
   destroy_camera(&cam);
+  destroy_chunk(&chunk);
   return 0;
 }
