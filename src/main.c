@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "chunk.h"
 #include "nuGL.h"
+#include "sky.h"
 #include "profiler.h"
 
 #define SENS 0.0015f
@@ -36,6 +37,9 @@ int main(void) {
   mesh_chunk(chunk);
   END_TIMER(mesh_chunk);
 
+  // Create sky renderer
+  SkyRenderer *sky_renderer = create_sky_renderer();
+
   // Debug prints
   nu_print_window(window, 0);
   nu_print_program(program, 0);
@@ -63,10 +67,9 @@ int main(void) {
 
     // Rendering
     nu_start_frame(window);
+    render_sky(sky_renderer, (float)window->height, cam->pitch, cam->fov);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glClearColor(0.1f, 0.85f, 1.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     nu_use_program(program);
     nu_bind_texture(textures, 0);
     nu_render_mesh(chunk->mesh);
