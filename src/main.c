@@ -15,6 +15,7 @@ int main(void) {
 
   // Create the window
   nu_Window *window = nu_create_window(600, 600, NULL, NULL);
+  if(!window) return 1; // Return on failure to create window
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   // Create shader program
   nu_Program *program = nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
