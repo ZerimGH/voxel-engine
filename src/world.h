@@ -7,6 +7,8 @@
 #include "nuGL.h"
 #include <cglm/cglm.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define HASHMAP_SIZE 4096
 
@@ -24,10 +26,13 @@ typedef struct {
   nu_Program *program;
   nu_Texture *block_textures;
   ChunkMap map;
+  size_t rdx, rdy, rdz; //render distances in each axis 
+  int cx, cy, cz;       // the centre of the world (where chunks load around)
 } World;
 
 World *create_world();
 void destroy_world(World **world);
 void render_world(World *world, mat4 vp);
+void world_update_centre(World *world, int nx, int ny, int nz);
 
 #endif

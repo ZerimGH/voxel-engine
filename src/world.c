@@ -1,6 +1,7 @@
 #include "world.h"
 
 static void world_load_chunk(World *world, int x, int y, int z);
+static void world_load_chunks(World *world);
 
 World *create_world() {
   nu_Program *program = nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
@@ -27,13 +28,14 @@ World *create_world() {
   world->block_textures = block_textures;
 
   // Load a few initial chunks
-  for (int x = -4; x <= 4; x++) {
-    for (int y = -4; y <= 4; y++) {
-      for (int z = -4; z <= 4; z++) {
-        world_load_chunk(world, x, y, z);
-      }
-    }
-  }
+  world->cx = 0;
+  world->cy = 0;
+  world->cz = 0;
+  world->rdx = 4;
+  world->rdy = 4;
+  world->rdz = 4;
+
+  world_load_chunks(world);
 
   return world;
 }
@@ -134,7 +136,10 @@ static void hashmap_remove(World *world, int x, int y, int z) {
 }
 
 static void hashmap_append(World *world, Chunk *chunk) {
-  if (!world || !chunk || hashmap_get(world, chunk->coords[0], chunk->coords[1], chunk->coords[2])) return;
+  if (!world || !chunk || hashmap_get(world, chunk->coords[0], chunk->coords[1], chunk->coords[2])){
+    if(chunk) destroy_chunk(&chunk);
+    return;
+  }
   int x = chunk->coords[0];
   int y = chunk->coords[1];
   int z = chunk->coords[2];
@@ -178,4 +183,65 @@ static void world_load_chunk(World *world, int x, int y, int z) {
   generate_chunk(chunk);
   mesh_chunk(chunk);
   hashmap_append(world, chunk);
+}
+
+// Super simple for now, load every chunk in render distance at once
+static void world_load_chunks(World *world) {
+  if (!world) return;
+  size_t count = 0;
+  for (int x = (int)-world->rdx; x <= (int)world->rdx; x++) {
+    for (int y = (int)-world->rdy; y <= (int)world->rdy; y++) {
+      for (int z = (int)-world->rdz; z <= (int)world->rdz; z++) {
+        int gx = world->cx + x;
+        int gy = world->cy + y;
+        int gz = world->cz + z;
+        if (!hashmap_get(world, gx, gy, gz)) {
+          world_load_chunk(world, gx, gy, gz);
+          count++;
+        }
+      }
+    }
+  }
+}
+
+static void world_unload_chunks(World *world) {
+  if(!world) return;
+  size_t count = 0;
+  for(size_t i = 0; i < HASHMAP_SIZE; i++) {
+    ChunkNode *node = world->map.buckets[i];
+    ChunkNode *prev = NULL;
+    while(node) {
+      if(node->chunk) {
+        int dx = abs(node->chunk->coords[0] - world->cx);
+        int dy = abs(node->chunk->coords[1] - world->cy);
+        int dz = abs(node->chunk->coords[2] - world->cz);
+        if(dx > world->rdx || dy > world->rdy || dz > world->rdz) {
+          ChunkNode *next = node->next;
+          if(prev) {
+            prev->next = next;
+          } else {
+            world->map.buckets[i] = next;
+          }
+
+          destroy_chunk(&node->chunk);
+          free(node);
+          node = next;
+          count++;
+          continue;
+        }
+      }
+      prev = node;
+      node = node->next;
+    }
+  }
+}
+
+void world_update_centre(World *world, int nx, int ny, int nz) {
+  if(!world) return;
+  if(nx == world->cx && ny == world->cy && nz == world->cz) return;
+  world->cx = nx;
+  world->cy = ny;
+  world->cz = nz;
+  world_load_chunks(world);
+  world_unload_chunks(world);
 }

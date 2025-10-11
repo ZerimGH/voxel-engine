@@ -38,7 +38,6 @@ void destroy_chunk(Chunk **chunk) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
   }
-  **chunk = (Chunk){0};
   *chunk = NULL;
 }
 
@@ -427,9 +426,9 @@ static void chunk_add_cube(Chunk *chunk, BlockType neighbours[6], size_t x, size
     memcpy(face_vertices, &cube[face * 6], sizeof(face_vertices));
 
     for (size_t i = 0; i < 6; i++) {
-      face_vertices[i].pos[0] += ccx + x;
-      face_vertices[i].pos[1] += ccy + y;
-      face_vertices[i].pos[2] += ccz + z;
+      face_vertices[i].pos[0] += ccx + (int)x;
+      face_vertices[i].pos[1] += ccy + (int)y;
+      face_vertices[i].pos[2] += ccz + (int)z;
       face_vertices[i].block_type = block_type;
     }
 

@@ -76,7 +76,7 @@ void destroy_game(Game **game) {
 
 void update_game(Game *game) {
   if (!game) return;
-#define MOVE_SPEED 0.3f
+#define MOVE_SPEED 3.f
 #define SENS 0.0015f
   // Poll events, move camera
   if (nu_get_key_state(game->window, GLFW_KEY_S)) camera_move(game->camera, (vec3){0, 0, -MOVE_SPEED});
@@ -89,6 +89,11 @@ void update_game(Game *game) {
   nu_update_input(game->window);
 #undef MOVE_SPEED
 #undef SENS
+  // Update world so chunks load around camera
+  int nx = (int)(floorf(game->camera->position[0] / CHUNK_WIDTH));
+  int ny = (int)(floorf(game->camera->position[1] / CHUNK_HEIGHT));
+  int nz = (int)(floorf(game->camera->position[2] / CHUNK_LENGTH));
+  world_update_centre(game->world, nx, ny, nz);
 }
 
 void render_game(Game *game) {

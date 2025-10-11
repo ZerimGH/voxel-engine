@@ -7,11 +7,15 @@ BUILD_DIR = build
 SRCS = $(SRC_DIR)/*.c $(NU_GL_DIR)/nuGL.c
 TARGET = main
 
-CFLAGS = -Wall -I. -I$(NU_GL_DIR) -O3
+CFLAGS = -Wall -I. -I$(NU_GL_DIR)
 
 linux:
 	mkdir -p $(BUILD_DIR)
-	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm
+	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -O3
+
+linux-debug:
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -g -O0
 
 run: linux
 	$(BUILD_DIR)/$(TARGET)
