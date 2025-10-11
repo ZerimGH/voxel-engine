@@ -9,11 +9,12 @@ bool world_update_queue(World *world);
 void *thread_routine(void *arg) {
   World *world = (World *)arg;
   if (!world) return NULL;
-  while (1) {
+  while (!world->kill) {
     if (!world_update_queue(world)) {
       usleep(1000);
     }
   }
+  return NULL;
 }
 #endif
 
@@ -49,15 +50,16 @@ World *create_world() {
   pthread_create(&world->chunk_thread, NULL, thread_routine, (void *)world);
   pthread_mutex_init(&world->hashmap_mutex, NULL);
   pthread_mutex_init(&world->queue_mutex, NULL);
+  world->kill = false;
 #endif
 
   // Queue a few initial chunks
   world->cx = 0;
   world->cy = 0;
   world->cz = 0;
-  world->rdx = 8;
+  world->rdx = 4;
   world->rdy = 4;
-  world->rdz = 8;
+  world->rdz = 4;
 
   world_load_chunks(world);
 
@@ -162,6 +164,11 @@ void destroy_world(World **world) {
   }
 
   if ((*world)->queue.items) free((*world)->queue.items);
+
+  #ifdef MULTITHREAD
+  (*world)->kill = true;
+  sleep(0.5);
+  #endif
 
   free(*world);
   *world = NULL;
