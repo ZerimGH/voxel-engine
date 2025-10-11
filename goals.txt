@@ -1,0 +1,24 @@
+LONG TERM (im putting these off):
+  - Multithreading
+  - Block lighting (BFS / Djikstras)
+  - Chunk-face culling for the simple mesher 
+  - Chunk saving / Loading
+  - Entities, player model, animations
+
+SHORT TERM (i will do these soon):
+  - Chunk manager (loading / unloading + meshing)
+  - Player physics / movement
+  - Player inventory / hotbar + ui
+  - Fix greedy mesher (Weird bug where some pixels of the background show
+    through the mesh)
+  - Modifying chunks (placing, breaking blocks)
+  - Cloud rendering, fog
+  - Better terrain generation (biomes, trees, ores)
+
+DONE: 
+  - Render cube
+  - Camera movement from input
+  - Chunk meshing / rendering
+  - Chunk terrain gen
+  - Different textures for different blocks and faces
+  - Gradient sky rendering
