@@ -5,6 +5,34 @@ static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
 bool world_update_queue(World *world);
 
+static void world_lock_hashmap(World *world) {
+  if(!world) return;
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->hashmap_mutex);
+#endif
+}
+
+static void world_unlock_hashmap(World *world) {
+  if(!world) return;
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
+}
+
+static void world_lock_queue(World *world) {
+  if(!world) return;
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->queue_mutex);
+#endif
+}
+
+static void world_unlock_queue(World *world) {
+  if(!world) return;
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->queue_mutex);
+#endif
+}
+
 #ifdef MULTITHREAD
 void *thread_routine(void *arg) {
   World *world = (World *)arg;
@@ -68,9 +96,7 @@ World *create_world() {
 
 static bool world_queue_chunk(World *world, int x, int y, int z) {
   if (!world) return false;
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->queue_mutex);
-#endif
+  world_lock_queue(world);
   if (!world->queue.items || world->queue.items_alloced == 0) {
     if (world->queue.items) free(world->queue.items);
     world->queue.items_alloced = 1024;
@@ -82,9 +108,7 @@ static bool world_queue_chunk(World *world, int x, int y, int z) {
     world->queue.items_alloced *= 2;
     QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced);
     if (!new_items) {
-#ifdef MULTITHREAD
-      pthread_mutex_unlock(&world->queue_mutex);
-#endif
+      world_unlock_queue(world);
       return false;
     }
     world->queue.items = new_items;
@@ -92,9 +116,7 @@ static bool world_queue_chunk(World *world, int x, int y, int z) {
 
   world->queue.items[world->queue.num_items++] = (QueueItem){.x = x, .y = y, .z = z};
 
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->queue_mutex);
-#endif
+  world_unlock_queue(world);
 
   return true;
 }
@@ -103,30 +125,27 @@ bool world_update_queue(World *world) {
   if (!world || !world->queue.items || world->queue.items_alloced == 0 || world->queue.num_items == 0) return false;
 
   QueueItem item;
-
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->queue_mutex);
-#endif
+  world_lock_queue(world);
 
   // Check if queue can shrink
   if(world->queue.num_items < world->queue.items_alloced / 2 && world->queue.items_alloced > 1024) {
     world->queue.items_alloced /= 2;
-    QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced); 
-    if(!new_items) return false;
+    QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced); // Shrink queue 
+    if(!new_items) {
+      // Handle realloc failure
+      world_unlock_queue(world);
+      return false;
+    }
     world->queue.items = new_items;
   }
 
+  // Pop from queue
   if (world->queue.num_items == 0) {
-#ifdef MULTITHREAD
-    pthread_mutex_unlock(&world->queue_mutex);
-#endif
+    world_unlock_queue(world);
     return false;
   }
   item = world->queue.items[--world->queue.num_items];
-
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->queue_mutex);
-#endif
+  world_unlock_queue(world);
 
   ChunkNode *node = hashmap_get(world, item.x, item.y, item.z);
   if (!node) return false;
@@ -135,15 +154,10 @@ bool world_update_queue(World *world) {
 
   if (!chunk) return false;
 
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&chunk->chunk_mutex);
-#endif
+  lock_chunk(chunk);
   generate_chunk(chunk);
   mesh_chunk(chunk);
-
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&chunk->chunk_mutex);
-#endif
+  unlock_chunk(chunk);
 
   return true;
 }
@@ -190,9 +204,7 @@ void render_world(World *world, mat4 vp) {
   nu_use_program(world->program);
   nu_set_uniform(world->program, "uMVP", &vp[0][0]);
 
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->hashmap_mutex);
-#endif
+  world_lock_hashmap(world);
 
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     ChunkNode *node = world->map.buckets[i];
@@ -200,29 +212,21 @@ void render_world(World *world, mat4 vp) {
       ChunkNode *next = node->next;
       Chunk *chunk = node->chunk;
       if (chunk && chunk->mesh) {
-#ifdef MULTITHREAD
-        pthread_mutex_lock(&chunk->chunk_mutex);
+        lock_chunk(chunk);
         ChunkState state = chunk->state;
-#else
-        ChunkState state = chunk->state;
-#endif
         if (state == STATE_NEEDS_SEND) {
           nu_send_mesh(chunk->mesh);
           nu_free_mesh(chunk->mesh);
           chunk->state = STATE_DONE;
         }
         nu_render_mesh(chunk->mesh);
-#ifdef MULTITHREAD
-        pthread_mutex_unlock(&chunk->chunk_mutex);
-#endif
+        unlock_chunk(chunk);
       }
       node = next;
     }
   }
 
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+  world_unlock_hashmap(world);
 }
 
 static inline uint32_t hash_chunk_coords(int x, int y, int z) {
@@ -249,31 +253,23 @@ static uint32_t get_bucket(int x, int y, int z) {
 static ChunkNode *hashmap_get(World *world, int x, int y, int z) {
   if (!world) return NULL;
   uint32_t bucket = get_bucket(x, y, z);
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->hashmap_mutex);
-#endif
+  world_lock_hashmap(world);
   ChunkNode *node = world->map.buckets[bucket];
   while (node) {
     if (node->x == x && node->y == y && node->z == z) {
-#ifdef MULTITHREAD
-      pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+      world_unlock_hashmap(world);
       return node;
     }
     node = node->next;
   }
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+  world_unlock_hashmap(world);
   return NULL;
 }
 
 static void hashmap_remove(World *world, int x, int y, int z) {
   if (!world) return;
   uint32_t bucket = get_bucket(x, y, z);
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->hashmap_mutex);
-#endif
+  world_lock_hashmap(world);
   ChunkNode *prev = NULL, *node = world->map.buckets[bucket];
   while (node) {
     if (node->x == x && node->y == y && node->z == z) {
@@ -284,17 +280,13 @@ static void hashmap_remove(World *world, int x, int y, int z) {
 
       destroy_chunk(&node->chunk);
       free(node);
-#ifdef MULTITHREAD
-      pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+      world_unlock_hashmap(world);
       return;
     }
     prev = node;
     node = node->next;
   }
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+  world_unlock_hashmap(world);
 }
 
 static void hashmap_append(World *world, Chunk *chunk) {
@@ -320,9 +312,7 @@ static void hashmap_append(World *world, Chunk *chunk) {
 
   uint32_t bucket = get_bucket(x, y, z);
 
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->hashmap_mutex);
-#endif
+  world_lock_hashmap(world);
 
   ChunkNode *prev = world->map.buckets[bucket];
   ChunkNode *node = world->map.buckets[bucket];
@@ -336,9 +326,7 @@ static void hashmap_append(World *world, Chunk *chunk) {
   } else {
     world->map.buckets[bucket] = new_node;
   }
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+  world_unlock_hashmap(world);
 }
 
 /*
@@ -381,9 +369,8 @@ static void world_load_chunks(World *world) {
 static void world_unload_chunks(World *world) {
   if (!world) return;
   size_t count = 0;
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->hashmap_mutex);
-#endif
+  world_lock_hashmap(world);
+
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     ChunkNode *node = world->map.buckets[i];
     ChunkNode *prev = NULL;
@@ -411,9 +398,7 @@ static void world_unload_chunks(World *world) {
       node = node->next;
     }
   }
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
+  world_unlock_hashmap(world);
 }
 
 void world_update_centre(World *world, int nx, int ny, int nz) {
@@ -425,3 +410,43 @@ void world_update_centre(World *world, int nx, int ny, int nz) {
   world_load_chunks(world);
   world_unload_chunks(world);
 }
+
+Block *world_get_block(World *world, int x, int y, int z) {
+  if(!world) return NULL;
+  int cx = (int)floorf((float)x / (float)CHUNK_WIDTH);
+  int cy = (int)floorf((float)y / (float)CHUNK_HEIGHT);
+  int cz = (int)floorf((float)z / (float)CHUNK_LENGTH);
+  ChunkNode *node = hashmap_get(world, cx, cy, cz);
+  if(!node) return NULL;
+  Chunk *chunk = node->chunk;
+  if(!chunk) return NULL;
+  size_t ccx = x < 0 ? (CHUNK_WIDTH - 1) - (-x) % CHUNK_WIDTH: x % CHUNK_WIDTH;
+  size_t ccy = y < 0 ? (CHUNK_WIDTH - 1) - (-y) % CHUNK_WIDTH: y % CHUNK_WIDTH;
+  size_t ccz = z < 0 ? (CHUNK_WIDTH - 1) - (-z) % CHUNK_WIDTH: z % CHUNK_WIDTH;
+  lock_chunk(chunk);
+  Block *block = chunk_get_block(chunk, ccx, ccy, ccz);
+  unlock_chunk(chunk);
+  return block;
+}
+
+void world_set_block(World *world, BlockType block, int x, int y, int z) {
+  if(!world) return;
+  int cx = (int)floorf((float)x / (float)CHUNK_WIDTH);
+  int cy = (int)floorf((float)y / (float)CHUNK_HEIGHT);
+  int cz = (int)floorf((float)z / (float)CHUNK_LENGTH);
+  ChunkNode *node = hashmap_get(world, cx, cy, cz);
+  if(!node) return;
+  Chunk *chunk = node->chunk;
+  if(!chunk) return;
+  size_t ccx = x < 0 ? (CHUNK_WIDTH - 1) - (-x) % CHUNK_WIDTH: x % CHUNK_WIDTH;
+  size_t ccy = y < 0 ? (CHUNK_WIDTH - 1) - (-y) % CHUNK_WIDTH: y % CHUNK_WIDTH;
+  size_t ccz = z < 0 ? (CHUNK_WIDTH - 1) - (-z) % CHUNK_WIDTH: z % CHUNK_WIDTH;
+  lock_chunk(chunk);
+  bool success = chunk_set_block(chunk, block, ccx, ccy, ccz);
+  unlock_chunk(chunk);
+  if(success) {
+    chunk->state = STATE_NEEDS_MESH;
+    world_queue_chunk(world, cx, cy, cz);
+  }
+}
+

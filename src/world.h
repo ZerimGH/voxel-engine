@@ -59,5 +59,7 @@ void destroy_world(World **world);
 void render_world(World *world, mat4 vp);
 void world_update_centre(World *world, int nx, int ny, int nz);
 bool world_update_queue(World *world);
+void world_set_block(World *world, BlockType block, int x, int y, int z);
+Block *world_get_block(World *world, int x, int y, int z);
 
 #endif

@@ -34,6 +34,20 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   return chunk;
 }
 
+void lock_chunk(Chunk *chunk) {
+  if(!chunk) return;
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&chunk->chunk_mutex);
+#endif
+}
+
+void unlock_chunk(Chunk *chunk) {
+  if(!chunk) return;
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&chunk->chunk_mutex);
+#endif
+}
+
 void print_chunk(Chunk *chunk) {
   if (!chunk) return (void)printf("Chunk: (null)\n");
   printf("Chunk: %p {\n", chunk);
@@ -47,19 +61,30 @@ void print_chunk(Chunk *chunk) {
 
 void destroy_chunk(Chunk **chunk) {
   if (!chunk || !(*chunk)) return;
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&(*chunk)->chunk_mutex);
-#endif
+  lock_chunk(*chunk);
   if ((*chunk)->mesh) nu_destroy_mesh(&(*chunk)->mesh);
   if ((*chunk)->blocks) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
   }
+  unlock_chunk(*chunk);
 #ifdef MULTITHREAD
-  pthread_mutex_unlock(&(*chunk)->chunk_mutex);
   pthread_mutex_destroy(&(*chunk)->chunk_mutex);
 #endif
   *chunk = NULL;
+}
+
+bool chunk_set_block(Chunk *chunk, BlockType block, size_t x, size_t y, size_t z) {
+  if(!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) return false;
+  if(!chunk->blocks || chunk->state != STATE_DONE) return false;
+  chunk->blocks[CHUNK_INDEX(x, y, z)] = (Block) {.type = block};
+  return true;
+}
+
+Block *chunk_get_block(Chunk *chunk, size_t x, size_t y, size_t z) {
+  if(!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) return NULL;
+  if(!chunk->blocks || chunk->state != STATE_DONE) return NULL;
+  return &chunk->blocks[CHUNK_INDEX(x, y, z)];
 }
 
 #define WORLD_SEED 1
@@ -169,9 +194,6 @@ void mesh_chunk(Chunk *chunk) {
   ChunkState state = chunk->state;
   if (state != STATE_NEEDS_MESH) {
     return;
-  }
-  if (chunk->mesh) {
-    nu_free_mesh(chunk->mesh);
   }
 #ifdef PROFILE_CHUNKMESH
   START_TIMER(mesh_chunk);
