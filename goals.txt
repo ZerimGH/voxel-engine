@@ -14,6 +14,8 @@ SHORT TERM (i will do these soon):
 
 RIGHT NOW (i am working on this):
   - Modifying chunks (placing, breaking blocks)
+  - Lower memory usage (represent block types as uint8_t, optimise mesh
+    lifetime, maybe even some vertex packing)
 
 DONE: 
   - Render cube

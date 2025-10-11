@@ -5,28 +5,28 @@ static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
 bool world_update_queue(World *world);
 
-static void world_lock_hashmap(World *world) {
+static inline void world_lock_hashmap(World *world) {
   if(!world) return;
 #ifdef MULTITHREAD
   pthread_mutex_lock(&world->hashmap_mutex);
 #endif
 }
 
-static void world_unlock_hashmap(World *world) {
+static inline void world_unlock_hashmap(World *world) {
   if(!world) return;
 #ifdef MULTITHREAD
   pthread_mutex_unlock(&world->hashmap_mutex);
 #endif
 }
 
-static void world_lock_queue(World *world) {
+static inline void world_lock_queue(World *world) {
   if(!world) return;
 #ifdef MULTITHREAD
   pthread_mutex_lock(&world->queue_mutex);
 #endif
 }
 
-static void world_unlock_queue(World *world) {
+static inline void world_unlock_queue(World *world) {
   if(!world) return;
 #ifdef MULTITHREAD
   pthread_mutex_unlock(&world->queue_mutex);
