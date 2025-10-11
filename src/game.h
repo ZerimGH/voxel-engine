@@ -3,6 +3,7 @@
 #define GAME_H
 
 #include "camera.h"
+#include "defines.h"
 #include "nuGL.h"
 #include "sky.h"
 #include "world.h"

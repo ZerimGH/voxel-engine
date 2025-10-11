@@ -3,6 +3,19 @@
 static void world_load_chunk(World *world, int x, int y, int z);
 static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
+bool world_update_queue(World *world);
+
+#ifdef MULTITHREAD
+void *thread_routine(void *arg) {
+  World *world = (World *)arg;
+  if (!world) return NULL;
+  while (1) {
+    if (!world_update_queue(world)) {
+      usleep(1000);
+    }
+  }
+}
+#endif
 
 World *create_world() {
   nu_Program *program = nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
@@ -32,13 +45,19 @@ World *create_world() {
   world->queue.items_alloced = 0;
   world->queue.num_items = 0;
 
-  // Load a few initial chunks
+#ifdef MULTITHREAD
+  pthread_create(&world->chunk_thread, NULL, thread_routine, (void *)world);
+  pthread_mutex_init(&world->hashmap_mutex, NULL);
+  pthread_mutex_init(&world->queue_mutex, NULL);
+#endif
+
+  // Queue a few initial chunks
   world->cx = 0;
   world->cy = 0;
   world->cz = 0;
-  world->rdx = 4;
+  world->rdx = 8;
   world->rdy = 4;
-  world->rdz = 4;
+  world->rdz = 8;
 
   world_load_chunks(world);
 
@@ -46,51 +65,84 @@ World *create_world() {
 }
 
 static bool world_queue_chunk(World *world, int x, int y, int z) {
-  if(!world) return false; 
-  if(!world->queue.items || world->queue.items_alloced == 0) {
-    if(world->queue.items) free(world->queue.items);
+  if (!world) return false;
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->queue_mutex);
+#endif
+  if (!world->queue.items || world->queue.items_alloced == 0) {
+    if (world->queue.items) free(world->queue.items);
     world->queue.items_alloced = 1024;
     world->queue.items = calloc(world->queue.items_alloced, sizeof(QueueItem));
     world->queue.num_items = 0;
   }
 
-  if(world->queue.num_items >= world->queue.items_alloced) {
+  if (world->queue.num_items >= world->queue.items_alloced) {
     world->queue.items_alloced *= 2;
-    printf("%zu\n", world->queue.items_alloced);
     QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced);
-    if(!new_items) return false;
-    world->queue.items = new_items; 
-  } 
+    if (!new_items) {
+#ifdef MULTITHREAD
+      pthread_mutex_unlock(&world->queue_mutex);
+#endif
+      return false;
+    }
+    world->queue.items = new_items;
+  }
 
-  world->queue.items[world->queue.num_items++] = (QueueItem) {
-    .x = x,
-    .y = y,
-    .z = z
-  };
+  world->queue.items[world->queue.num_items++] = (QueueItem){.x = x, .y = y, .z = z};
+
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->queue_mutex);
+#endif
 
   return true;
 }
 
 bool world_update_queue(World *world) {
-  // Pop from queue, gen chunk
-  if(!world || !world->queue.items || world->queue.items_alloced == 0 || world->queue.num_items == 0) return false;
-  // Shrink queue if possible
-  if (world->queue.num_items < world->queue.items_alloced / 2 && world->queue.items_alloced > 1024) {
+  if (!world || !world->queue.items || world->queue.items_alloced == 0 || world->queue.num_items == 0) return false;
+
+  QueueItem item;
+
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->queue_mutex);
+#endif
+
+  // Check if queue can shrink
+  if(world->queue.num_items < world->queue.items_alloced / 2 && world->queue.items_alloced > 1024) {
     world->queue.items_alloced /= 2;
-    printf("%zu\n", world->queue.items_alloced);
-    QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced);
+    QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced); 
     if(!new_items) return false;
-    world->queue.items = new_items; 
+    world->queue.items = new_items;
   }
 
-  // Pop, mesh and generate
-  QueueItem item = world->queue.items[--world->queue.num_items];
+  if (world->queue.num_items == 0) {
+#ifdef MULTITHREAD
+    pthread_mutex_unlock(&world->queue_mutex);
+#endif
+    return false;
+  }
+  item = world->queue.items[--world->queue.num_items];
+
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->queue_mutex);
+#endif
+
   ChunkNode *node = hashmap_get(world, item.x, item.y, item.z);
-  if(!node) return false;
+  if (!node) return false;
+
   Chunk *chunk = node->chunk;
-  if(!chunk) return false;
+
+  if (!chunk) return false;
+
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&chunk->chunk_mutex);
+#endif
   generate_chunk(chunk);
   mesh_chunk(chunk);
+
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&chunk->chunk_mutex);
+#endif
+
   return true;
 }
 
@@ -109,7 +161,7 @@ void destroy_world(World **world) {
     }
   }
 
-  if((*world)->queue.items) free((*world)->queue.items);
+  if ((*world)->queue.items) free((*world)->queue.items);
 
   free(*world);
   *world = NULL;
@@ -120,11 +172,18 @@ void render_world(World *world, mat4 vp) {
   if (!world) return;
 
   glEnable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE); // Greedy meshing bug isnt visible without backface
-                           // culling
+  #ifdef GREEDY 
+  glDisable(GL_CULL_FACE);  // Greedy meshing bug isnt visible without backface
+  #else                     // culling
+  glEnable(GL_CULL_FACE);
+  #endif
 
   nu_use_program(world->program);
   nu_set_uniform(world->program, "uMVP", &vp[0][0]);
+
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->hashmap_mutex);
+#endif
 
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     ChunkNode *node = world->map.buckets[i];
@@ -132,11 +191,29 @@ void render_world(World *world, mat4 vp) {
       ChunkNode *next = node->next;
       Chunk *chunk = node->chunk;
       if (chunk && chunk->mesh) {
+#ifdef MULTITHREAD
+        pthread_mutex_lock(&chunk->chunk_mutex);
+        ChunkState state = chunk->state;
+#else
+        ChunkState state = chunk->state;
+#endif
+        if (state == STATE_NEEDS_SEND) {
+          nu_send_mesh(chunk->mesh);
+          nu_free_mesh(chunk->mesh);
+          chunk->state = STATE_DONE;
+        }
         nu_render_mesh(chunk->mesh);
+#ifdef MULTITHREAD
+        pthread_mutex_unlock(&chunk->chunk_mutex);
+#endif
       }
       node = next;
     }
   }
+
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
 }
 
 static inline uint32_t hash_chunk_coords(int x, int y, int z) {
@@ -163,17 +240,31 @@ static uint32_t get_bucket(int x, int y, int z) {
 static ChunkNode *hashmap_get(World *world, int x, int y, int z) {
   if (!world) return NULL;
   uint32_t bucket = get_bucket(x, y, z);
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->hashmap_mutex);
+#endif
   ChunkNode *node = world->map.buckets[bucket];
   while (node) {
-    if (node->x == x && node->y == y && node->z == z) return node;
+    if (node->x == x && node->y == y && node->z == z) {
+#ifdef MULTITHREAD
+      pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
+      return node;
+    }
     node = node->next;
   }
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
   return NULL;
 }
 
 static void hashmap_remove(World *world, int x, int y, int z) {
   if (!world) return;
   uint32_t bucket = get_bucket(x, y, z);
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->hashmap_mutex);
+#endif
   ChunkNode *prev = NULL, *node = world->map.buckets[bucket];
   while (node) {
     if (node->x == x && node->y == y && node->z == z) {
@@ -184,16 +275,22 @@ static void hashmap_remove(World *world, int x, int y, int z) {
 
       destroy_chunk(&node->chunk);
       free(node);
+#ifdef MULTITHREAD
+      pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
       return;
     }
     prev = node;
     node = node->next;
   }
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
 }
 
 static void hashmap_append(World *world, Chunk *chunk) {
-  if (!world || !chunk || hashmap_get(world, chunk->coords[0], chunk->coords[1], chunk->coords[2])){
-    if(chunk) destroy_chunk(&chunk);
+  if (!world || !chunk || hashmap_get(world, chunk->coords[0], chunk->coords[1], chunk->coords[2])) {
+    if (chunk) destroy_chunk(&chunk);
     return;
   }
   int x = chunk->coords[0];
@@ -203,7 +300,6 @@ static void hashmap_append(World *world, Chunk *chunk) {
   // Create node
   ChunkNode *new_node = calloc(1, sizeof(ChunkNode));
   if (!new_node) {
-    fprintf(stderr, "(hashmap_append): Calloc failed! Destroying chunk at (%d, %d, %d).\n", x, y, z);
     destroy_chunk(&chunk);
     return;
   }
@@ -214,6 +310,11 @@ static void hashmap_append(World *world, Chunk *chunk) {
   new_node->next = NULL;
 
   uint32_t bucket = get_bucket(x, y, z);
+
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->hashmap_mutex);
+#endif
+
   ChunkNode *prev = world->map.buckets[bucket];
   ChunkNode *node = world->map.buckets[bucket];
   while (node) {
@@ -226,6 +327,9 @@ static void hashmap_append(World *world, Chunk *chunk) {
   } else {
     world->map.buckets[bucket] = new_node;
   }
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
 }
 
 /*
@@ -243,7 +347,7 @@ static void world_load_chunk(World *world, int x, int y, int z) {
 }
 */
 
-// Super simple for now, allocate and queue every chunk in render distance 
+// Super simple for now, allocate and queue every chunk in render distance
 static void world_load_chunks(World *world) {
   if (!world) return;
   for (int x = (int)-world->rdx; x <= (int)world->rdx; x++) {
@@ -254,7 +358,7 @@ static void world_load_chunks(World *world) {
         int gz = world->cz + z;
         if (!hashmap_get(world, gx, gy, gz)) {
           Chunk *chunk = create_chunk(gx, gy, gz);
-          if(world_queue_chunk(world, gx, gy, gz)) {
+          if (world_queue_chunk(world, gx, gy, gz)) {
             hashmap_append(world, chunk);
           } else {
             destroy_chunk(&chunk);
@@ -266,19 +370,22 @@ static void world_load_chunks(World *world) {
 }
 
 static void world_unload_chunks(World *world) {
-  if(!world) return;
+  if (!world) return;
   size_t count = 0;
-  for(size_t i = 0; i < HASHMAP_SIZE; i++) {
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->hashmap_mutex);
+#endif
+  for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     ChunkNode *node = world->map.buckets[i];
     ChunkNode *prev = NULL;
-    while(node) {
-      if(node->chunk) {
+    while (node) {
+      if (node->chunk) {
         int dx = abs(node->chunk->coords[0] - world->cx);
         int dy = abs(node->chunk->coords[1] - world->cy);
         int dz = abs(node->chunk->coords[2] - world->cz);
-        if(dx > world->rdx || dy > world->rdy || dz > world->rdz) {
+        if (dx > world->rdx || dy > world->rdy || dz > world->rdz) {
           ChunkNode *next = node->next;
-          if(prev) {
+          if (prev) {
             prev->next = next;
           } else {
             world->map.buckets[i] = next;
@@ -295,11 +402,14 @@ static void world_unload_chunks(World *world) {
       node = node->next;
     }
   }
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
 }
 
 void world_update_centre(World *world, int nx, int ny, int nz) {
-  if(!world) return;
-  if(nx == world->cx && ny == world->cy && nz == world->cz) return;
+  if (!world) return;
+  if (nx == world->cx && ny == world->cy && nz == world->cz) return;
   world->cx = nx;
   world->cy = ny;
   world->cz = nz;

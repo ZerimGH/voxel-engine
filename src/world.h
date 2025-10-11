@@ -4,8 +4,8 @@
 
 #include "block.h"
 #include "chunk.h"
-#include "nuGL.h"
 #include "defines.h"
+#include "nuGL.h"
 
 #include <cglm/cglm.h>
 #include <stdint.h>
@@ -14,6 +14,7 @@
 
 #ifdef MULTITHREAD
 #include <pthread.h>
+#include <unistd.h>
 #endif
 
 #define HASHMAP_SIZE 4096
@@ -42,9 +43,14 @@ typedef struct {
   nu_Program *program;
   nu_Texture *block_textures;
   ChunkMap map;
-  size_t rdx, rdy, rdz; // render distances in each axis 
+  size_t rdx, rdy, rdz; // render distances in each axis
   int cx, cy, cz;       // the centre of the world (where chunks load around)
   Queue queue;
+#ifdef MULTITHREAD
+  pthread_t chunk_thread;
+  pthread_mutex_t hashmap_mutex;
+  pthread_mutex_t queue_mutex;
+#endif
 } World;
 
 World *create_world();

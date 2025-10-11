@@ -76,7 +76,7 @@ void destroy_game(Game **game) {
 
 void update_game(Game *game) {
   if (!game) return;
-#define MOVE_SPEED 3.f
+#define MOVE_SPEED 0.3f
 #define SENS 0.0015f
   // Poll events, move camera
   if (nu_get_key_state(game->window, GLFW_KEY_S)) camera_move(game->camera, (vec3){0, 0, -MOVE_SPEED});
@@ -94,11 +94,13 @@ void update_game(Game *game) {
   int ny = (int)(floorf(game->camera->position[1] / CHUNK_HEIGHT));
   int nz = (int)(floorf(game->camera->position[2] / CHUNK_LENGTH));
   world_update_centre(game->world, nx, ny, nz);
-  float time_budget = 1.f/120.f;
+#ifndef MULTITHREAD
+  float time_budget = 1.f / 120.f;
   float start_time = glfwGetTime();
   do {
-    if(!world_update_queue(game->world)) break;
+    if (!world_update_queue(game->world)) break;
   } while (glfwGetTime() - start_time < time_budget);
+#endif
 }
 
 void render_game(Game *game) {

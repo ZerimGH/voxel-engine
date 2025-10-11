@@ -13,20 +13,28 @@
 
 // Includes
 #include "block.h"
+#include "defines.h"
 #include "noise.h"
 #define NUGL_DEBUG
 #include "nuGL.h"
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef MULTITHREAD
+#include <pthread.h>
+#endif
+
+typedef enum { STATE_EMPTY, STATE_NEEDS_MESH, STATE_NEEDS_SEND, STATE_DONE } ChunkState;
 
 // Structs
 typedef struct {
   int coords[3];
   Block *blocks;
-  bool generated;
   size_t num_blocks;
   nu_Mesh *mesh;
-  bool meshed;
+  ChunkState state;
+#ifdef MULTITHREAD
+  pthread_mutex_t chunk_mutex;
+#endif
 } Chunk;
 
 // Function prototypes

@@ -3,6 +3,18 @@
 #include "defines.h"
 #include "profiler.h"
 
+typedef struct {
+  GLfloat pos[3];
+  GLfloat tex[2];
+  GLint side_index;
+  GLint block_type;
+} Vertex;
+
+size_t vertex_num = 4;
+size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint), sizeof(GLint)};
+size_t vertex_counts[] = {3, 2, 1, 1};
+GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT, GL_INT, GL_INT};
+
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   Chunk *chunk = calloc(1, sizeof(Chunk));
   if (!chunk) {
@@ -12,11 +24,13 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   chunk->coords[0] = chunk_x;
   chunk->coords[1] = chunk_y;
   chunk->coords[2] = chunk_z;
-  chunk->generated = false;
   chunk->blocks = NULL;
   chunk->num_blocks = 0;
-  chunk->mesh = NULL;
-  chunk->meshed = false;
+  chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
+  chunk->state = STATE_EMPTY;
+#ifdef MULTITHREAD
+  pthread_mutex_init(&chunk->chunk_mutex, NULL);
+#endif
   return chunk;
 }
 
@@ -25,37 +39,46 @@ void print_chunk(Chunk *chunk) {
   printf("Chunk: %p {\n", chunk);
   printf("  coords: (%d, %d, %d)\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
   printf("  blocks: %p\n", chunk->blocks);
-  printf("  generated: %d\n", chunk->generated);
   printf("  num_blocks: %zu\n", chunk->num_blocks);
   nu_print_mesh(chunk->mesh, 2);
-  printf("  meshed: %d\n", chunk->meshed);
+  // printf("  meshed: %d\n", chunk->meshed);
   printf("}\n");
 }
 
 void destroy_chunk(Chunk **chunk) {
   if (!chunk || !(*chunk)) return;
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&(*chunk)->chunk_mutex);
+#endif
   if ((*chunk)->mesh) nu_destroy_mesh(&(*chunk)->mesh);
   if ((*chunk)->blocks) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
   }
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&(*chunk)->chunk_mutex);
+  pthread_mutex_destroy(&(*chunk)->chunk_mutex);
+#endif
   *chunk = NULL;
 }
 
 #define WORLD_SEED 1
 
 void generate_chunk(Chunk *chunk) {
-  if (!chunk || chunk->generated) return;
+  if (!chunk) return;
+  ChunkState state = chunk->state;
+  if (state != STATE_EMPTY) {
+    return;
+  }
   if (chunk->blocks) free(chunk->blocks);
-
   chunk->blocks = calloc(CHUNK_VOLUME, sizeof(Block));
   if (!chunk->blocks) {
     fprintf(stderr, "(generate_chunk): Couldn't generate chunk at coords (%d, %d, %d), calloc failed.\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
     return;
   }
 
-#ifdef PROFILE_CHUNKGEN 
-START_TIMER(generate_chunk);
+#ifdef PROFILE_CHUNKGEN
+  START_TIMER(generate_chunk);
 #endif
 
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
@@ -85,24 +108,13 @@ START_TIMER(generate_chunk);
       }
     }
   }
-  chunk->generated = true;
 
-#ifdef PROFILE_CHUNKGEN 
-END_TIMER(generate_chunk);
+  chunk->state = STATE_NEEDS_MESH;
+
+#ifdef PROFILE_CHUNKGEN
+  END_TIMER(generate_chunk);
 #endif
 }
-
-typedef struct {
-  GLfloat pos[3];
-  GLfloat tex[2];
-  GLint side_index;
-  GLint block_type;
-} Vertex;
-
-size_t vertex_num = 4;
-size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint), sizeof(GLint)};
-size_t vertex_counts[] = {3, 2, 1, 1};
-GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT, GL_INT, GL_INT};
 
 #ifdef GREEDY
 
@@ -151,12 +163,19 @@ static inline void emit_face(Vertex *target, size_t *count, float p[4][3], float
 // Greedy meshing
 void mesh_chunk(Chunk *chunk) {
 
-  if (!chunk || !chunk->generated || !chunk->blocks || chunk->meshed) return;
-  if (chunk->mesh) nu_destroy_mesh(&chunk->mesh);
+  if (!chunk) return;
+  if (!chunk->blocks) return;
+
+  ChunkState state = chunk->state;
+  if (state != STATE_NEEDS_MESH) {
+    return;
+  }
+  if (chunk->mesh) {
+    nu_free_mesh(chunk->mesh);
+  }
 #ifdef PROFILE_CHUNKMESH
-START_TIMER(mesh_chunk);
+  START_TIMER(mesh_chunk);
 #endif
-  chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
 
   // Allocate array of mesh vertices
   size_t max_verts = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_LENGTH * 6;
@@ -325,16 +344,14 @@ START_TIMER(mesh_chunk);
   // Upload vertices to meshes
   if (vert_count > 0) {
     nu_mesh_add_bytes(chunk->mesh, vert_count * sizeof(Vertex), verts);
-    nu_send_mesh(chunk->mesh);
-    nu_free_mesh(chunk->mesh);
   }
-  // Mark as meshed
-  chunk->meshed = true;
   free(verts);
 
 #ifdef PROFILE_CHUNKMESH
-END_TIMER(mesh_chunk);
+  END_TIMER(mesh_chunk);
 #endif
+
+  chunk->state = STATE_NEEDS_SEND;
 }
 #else
 
@@ -428,14 +445,14 @@ void get_neighbours(Chunk *chunk, BlockType neighbours[6], size_t x, size_t y, s
 }
 
 void mesh_chunk(Chunk *chunk) {
-  if (!chunk || !chunk->generated || !chunk->blocks) return;
+  if (!chunk || !chunk->blocks) return;
 
 #ifdef PROFILE_CHUNKMESH
-START_TIMER(mesh_chunk);
+  START_TIMER(mesh_chunk);
 #endif
 
-  if (chunk->mesh) nu_destroy_mesh(&chunk->mesh);
-  chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
+  if (chunk->state != STATE_NEEDS_MESH) return;
+  if (chunk->mesh) nu_free_mesh(chunk->mesh);
 
   for (size_t x = 0; x < CHUNK_WIDTH; x++) {
     for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
@@ -452,11 +469,10 @@ START_TIMER(mesh_chunk);
     }
   }
 
-  nu_send_mesh(chunk->mesh);
-  nu_free_mesh(chunk->mesh);
+  chunk->state = STATE_NEEDS_SEND;
 
 #ifdef PROFILE_CHUNKMESH
-END_TIMER(mesh_chunk);
+  END_TIMER(mesh_chunk);
 #endif
 }
 
