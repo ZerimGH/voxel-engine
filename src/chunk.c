@@ -1,6 +1,7 @@
 #include "chunk.h"
 
-#define GREEDY
+#include "defines.h"
+#include "profiler.h"
 
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   Chunk *chunk = calloc(1, sizeof(Chunk));
@@ -41,72 +42,40 @@ void destroy_chunk(Chunk **chunk) {
   *chunk = NULL;
 }
 
-typedef enum {
-  BiomePlains,
-  BiomeMountains,
-} Biome;
-
-static Biome get_chunk_biome(Chunk *chunk) {
-  Biome biomes[] = {BiomePlains, BiomeMountains};
-  float biome_val = octave_noise_2d(chunk->coords[0] * CHUNK_WIDTH, chunk->coords[2] * CHUNK_LENGTH, 3, 0.35, 1.6, 128, 13);
-  biome_val += 1;
-  biome_val /= 2;
-  biome_val *= 0.99f;
-  int biome_index = (int)floorf(biome_val * sizeof(biomes) / sizeof(Biome));
-  return biomes[biome_index];
-}
-
-float get_biome_power(Biome biome) {
-  switch (biome) {
-  case BiomePlains:
-    return 1.f;
-  case BiomeMountains:
-    return 2.f;
-  default:
-    return 0.f;
-  }
-}
-
-float get_biome_mult(Biome biome) {
-  switch (biome) {
-  case BiomePlains:
-    return 25.f;
-  case BiomeMountains:
-    return 200.f;
-  default:
-    return 0.f;
-  }
-}
+#define WORLD_SEED 1
 
 void generate_chunk(Chunk *chunk) {
   if (!chunk || chunk->generated) return;
   if (chunk->blocks) free(chunk->blocks);
+
   chunk->blocks = calloc(CHUNK_VOLUME, sizeof(Block));
   if (!chunk->blocks) {
     fprintf(stderr, "(generate_chunk): Couldn't generate chunk at coords (%d, %d, %d), calloc failed.\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
     return;
   }
+
+#ifdef PROFILE_CHUNKGEN 
+START_TIMER(generate_chunk);
+#endif
+
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
   int ccz = chunk->coords[2] * CHUNK_LENGTH;
-  Biome biome = get_chunk_biome(chunk);
   for (size_t x = 0; x < CHUNK_WIDTH; x++) {
     int gx = ccx + x;
     for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       int gz = ccz + z;
-      float noise_val = octave_noise_2d(gx, gz, 4, 0.35, 1.6, 128, 2);
-      float power = get_biome_power(biome);
-      float mult = get_biome_mult(biome);
-      int terrain_height = powf(noise_val, power) * mult + 50;
+      float noise_val = octave_noise_2d(gx, gz, 4, 0.35, 1.6, 128, WORLD_SEED);
+      int terrain_height = noise_val * 50 + 50;
       for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
         int gy = ccy + y;
         BlockType block = BlockAir;
         if (gy <= terrain_height) {
           int dist_from_surface = terrain_height - gy;
           if (dist_from_surface == 0) {
-            block = biome == BiomePlains ? BlockGrass : BlockStone;
+            block = BlockGrass;
           } else if (dist_from_surface <= 5) {
-            block = biome == BiomePlains ? BlockDirt : BlockStone;
+            block = BlockDirt;
           } else {
             block = BlockStone;
           }
@@ -117,6 +86,10 @@ void generate_chunk(Chunk *chunk) {
     }
   }
   chunk->generated = true;
+
+#ifdef PROFILE_CHUNKGEN 
+END_TIMER(generate_chunk);
+#endif
 }
 
 typedef struct {
@@ -180,6 +153,9 @@ void mesh_chunk(Chunk *chunk) {
 
   if (!chunk || !chunk->generated || !chunk->blocks || chunk->meshed) return;
   if (chunk->mesh) nu_destroy_mesh(&chunk->mesh);
+#ifdef PROFILE_CHUNKMESH
+START_TIMER(mesh_chunk);
+#endif
   chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
 
   // Allocate array of mesh vertices
@@ -355,6 +331,10 @@ void mesh_chunk(Chunk *chunk) {
   // Mark as meshed
   chunk->meshed = true;
   free(verts);
+
+#ifdef PROFILE_CHUNKMESH
+END_TIMER(mesh_chunk);
+#endif
 }
 #else
 
@@ -450,6 +430,10 @@ void get_neighbours(Chunk *chunk, BlockType neighbours[6], size_t x, size_t y, s
 void mesh_chunk(Chunk *chunk) {
   if (!chunk || !chunk->generated || !chunk->blocks) return;
 
+#ifdef PROFILE_CHUNKMESH
+START_TIMER(mesh_chunk);
+#endif
+
   if (chunk->mesh) nu_destroy_mesh(&chunk->mesh);
   chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
 
@@ -470,6 +454,10 @@ void mesh_chunk(Chunk *chunk) {
 
   nu_send_mesh(chunk->mesh);
   nu_free_mesh(chunk->mesh);
+
+#ifdef PROFILE_CHUNKMESH
+END_TIMER(mesh_chunk);
+#endif
 }
 
 #endif

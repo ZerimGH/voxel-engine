@@ -17,6 +17,10 @@ linux-debug:
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -g -O0
 
+linux-multithread:
+	mkdir -p $(BUILD_DIR)
+	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -O3 -pthread
+
 run: linux
 	$(BUILD_DIR)/$(TARGET)
 

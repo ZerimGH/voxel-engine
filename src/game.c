@@ -25,7 +25,7 @@ Game *create_game(void) {
   }
 
   // Create camera
-  camera = create_camera(0.1, 512, 90.f);
+  camera = create_camera(0.5, 512, 90.f);
   if (!camera) {
     sprintf(err_msg, "(create_game): Error creating game: create_camera() returned NULL\n");
     goto failure;
@@ -94,6 +94,11 @@ void update_game(Game *game) {
   int ny = (int)(floorf(game->camera->position[1] / CHUNK_HEIGHT));
   int nz = (int)(floorf(game->camera->position[2] / CHUNK_LENGTH));
   world_update_centre(game->world, nx, ny, nz);
+  float time_budget = 1.f/120.f;
+  float start_time = glfwGetTime();
+  do {
+    if(!world_update_queue(game->world)) break;
+  } while (glfwGetTime() - start_time < time_budget);
 }
 
 void render_game(Game *game) {
