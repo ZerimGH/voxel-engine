@@ -1,5 +1,4 @@
 LONG TERM (im putting these off):
-  - Multithreading
   - Block lighting (BFS / Djikstras)
   - Chunk-face culling for the simple mesher 
   - Chunk saving / Loading
@@ -22,3 +21,4 @@ DONE:
   - Chunk terrain gen
   - Different textures for different blocks and faces
   - Gradient sky rendering
+  - Multithreading
