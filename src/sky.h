@@ -4,8 +4,8 @@
 
 // Includes
 #include "nuGL.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // Structs
 typedef struct {

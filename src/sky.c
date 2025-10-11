@@ -12,19 +12,14 @@ GLenum sky_vertex_types[] = {GL_FLOAT};
 SkyRenderer *create_sky_renderer(void) {
   nu_Program *program = nu_create_program(2, "shaders/sky.vert", "shaders/sky.frag");
   nu_Mesh *mesh = nu_create_mesh(sky_vertex_num, sky_vertex_sizes, sky_vertex_counts, sky_vertex_types);
-  if(!program || !mesh) {
+  if (!program || !mesh) {
     fprintf(stderr, "(create_sky) Error creating sky.\n");
     fprintf(stderr, "program: %p, mesh: %p\n", program, mesh);
     nu_destroy_program(&program);
     nu_destroy_mesh(&mesh);
   }
   SkyVertex quad_vertices[6] = {
-    {{-1, -1}},
-    {{1, -1}},
-    {{-1, 1}},
-    {{1, 1}},
-    {{1, -1}},
-    {{-1, 1}},
+      {{-1, -1}}, {{1, -1}}, {{-1, 1}}, {{1, 1}}, {{1, -1}}, {{-1, 1}},
   };
   nu_mesh_add_bytes(mesh, sizeof(quad_vertices), quad_vertices);
   nu_send_mesh(mesh);
@@ -35,7 +30,7 @@ SkyRenderer *create_sky_renderer(void) {
   nu_register_uniform(program, "cameraFOV", GL_FLOAT);
 
   SkyRenderer *renderer = calloc(1, sizeof(SkyRenderer));
-  if(!renderer) {
+  if (!renderer) {
     fprintf(stderr, "(create_sky): Error creating sky, calloc failed.\n");
     nu_destroy_program(&program);
     nu_destroy_mesh(&mesh);
@@ -47,7 +42,7 @@ SkyRenderer *create_sky_renderer(void) {
 }
 
 void render_sky(SkyRenderer *renderer, float screen_height, float pitch, float fov) {
-  if(!renderer) return;
+  if (!renderer) return;
   // Set OpenGL stuff
   glDisable(GL_CULL_FACE);
   glDisable(GL_DEPTH_TEST);
@@ -62,7 +57,7 @@ void render_sky(SkyRenderer *renderer, float screen_height, float pitch, float f
 }
 
 void destroy_sky_renderer(SkyRenderer **renderer) {
-  if(!renderer || !(*renderer)) {
+  if (!renderer || !(*renderer)) {
     return;
   }
   nu_destroy_program(&(*renderer)->program);

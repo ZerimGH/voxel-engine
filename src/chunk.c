@@ -1,6 +1,6 @@
 #include "chunk.h"
 
-// #define GREEDY
+#define GREEDY
 
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   Chunk *chunk = calloc(1, sizeof(Chunk));
@@ -42,6 +42,43 @@ void destroy_chunk(Chunk **chunk) {
   *chunk = NULL;
 }
 
+typedef enum {
+  BiomePlains,
+  BiomeMountains,
+} Biome;
+
+static Biome get_chunk_biome(Chunk *chunk) {
+  Biome biomes[] = {BiomePlains, BiomeMountains};
+  float biome_val = octave_noise_2d(chunk->coords[0] * CHUNK_WIDTH, chunk->coords[2] * CHUNK_LENGTH, 3, 0.35, 1.6, 128, 13);
+  biome_val += 1;
+  biome_val /= 2;
+  biome_val *= 0.99f;
+  int biome_index = (int)floorf(biome_val * sizeof(biomes) / sizeof(Biome));
+  return biomes[biome_index];
+}
+
+float get_biome_power(Biome biome) {
+  switch (biome) {
+  case BiomePlains:
+    return 1.f;
+  case BiomeMountains:
+    return 2.f;
+  default:
+    return 0.f;
+  }
+}
+
+float get_biome_mult(Biome biome) {
+  switch (biome) {
+  case BiomePlains:
+    return 25.f;
+  case BiomeMountains:
+    return 200.f;
+  default:
+    return 0.f;
+  }
+}
+
 void generate_chunk(Chunk *chunk) {
   if (!chunk || chunk->generated) return;
   if (chunk->blocks) free(chunk->blocks);
@@ -53,20 +90,24 @@ void generate_chunk(Chunk *chunk) {
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
   int ccz = chunk->coords[2] * CHUNK_LENGTH;
+  Biome biome = get_chunk_biome(chunk);
   for (size_t x = 0; x < CHUNK_WIDTH; x++) {
     int gx = ccx + x;
     for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       int gz = ccz + z;
-      int terrain_height = octave_noise_2d(gx, gz, 3, 0.5, 1.6, 128, 1) * 50 + 50;
+      float noise_val = octave_noise_2d(gx, gz, 4, 0.35, 1.6, 128, 2);
+      float power = get_biome_power(biome);
+      float mult = get_biome_mult(biome);
+      int terrain_height = powf(noise_val, power) * mult + 50;
       for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
         int gy = ccy + y;
         BlockType block = BlockAir;
         if (gy <= terrain_height) {
           int dist_from_surface = terrain_height - gy;
           if (dist_from_surface == 0) {
-            block = BlockGrass;
+            block = biome == BiomePlains ? BlockGrass : BlockStone;
           } else if (dist_from_surface <= 5) {
-            block = BlockDirt;
+            block = biome == BiomePlains ? BlockDirt : BlockStone;
           } else {
             block = BlockStone;
           }
@@ -113,7 +154,7 @@ static inline int block_render_type(BlockType t) {
 static inline void emit_face(Vertex *target, size_t *count, float p[4][3], float s[4], float t[4], bool face_positive, bool flip_winding, int side_index, int block_type) {
 #define EMIT(i)                                                                                                                                                                                        \
   target[(*count)++] = (Vertex) {                                                                                                                                                                      \
-    {roundf(p[i][0]), roundf(p[i][1]), roundf(p[i][2])}, {s[i], t[i]}, side_index, block_type                                                                                                                                  \
+    {roundf(p[i][0]), roundf(p[i][1]), roundf(p[i][2])}, {s[i], t[i]}, side_index, block_type                                                                                                          \
   }
 
   static const unsigned int faces[2][6] = {
