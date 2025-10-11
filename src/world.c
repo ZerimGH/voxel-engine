@@ -167,7 +167,9 @@ void destroy_world(World **world) {
 
   #ifdef MULTITHREAD
   (*world)->kill = true;
-  sleep(0.5);
+  pthread_join((*world)->chunk_thread, NULL);
+  pthread_mutex_destroy(&(*world)->hashmap_mutex);
+  pthread_mutex_destroy(&(*world)->queue_mutex);
   #endif
 
   free(*world);

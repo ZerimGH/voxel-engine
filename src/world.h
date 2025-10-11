@@ -50,7 +50,7 @@ typedef struct {
   pthread_t chunk_thread;
   pthread_mutex_t hashmap_mutex;
   pthread_mutex_t queue_mutex;
-  bool kill;
+  volatile bool kill;
 #endif
 } World;
 
