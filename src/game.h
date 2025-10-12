@@ -3,6 +3,7 @@
 #define GAME_H
 
 #include "camera.h"
+#include "player.h"
 #include "defines.h"
 #include "nuGL.h"
 #include "sky.h"
@@ -13,8 +14,9 @@
 typedef struct {
   nu_Window *window;
   SkyRenderer *sky_renderer;
-  Camera *camera;
+  Player *player;
   World *world;
+  float this_time, last_time;
 } Game;
 
 Game *create_game(void);

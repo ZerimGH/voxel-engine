@@ -15,10 +15,21 @@ linux:
 
 linux-debug:
 	mkdir -p $(BUILD_DIR)
-	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -g -O0 =pthread
+	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -g -O0 -pthread
 
 run: linux
 	$(BUILD_DIR)/$(TARGET)
+
+# for windows, you need the DLLs to compile
+# https://www.glfw.org/download
+# https://glew.sourceforge.net/index.html
+# for multithreading, you also need pthreads-win32
+# https://github.com/GerHobbelt/pthread-win32
+windows:
+	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)$(TARGET).exe \
+		-L./windlls/glfw-3.4.bin.WIN64/lib-mingw-w64/ \
+		-L./windlls/glew-2.1.0/lib/Release/x64 \
+		-lglfw3 -lglew32 -lgdi32 -lopengl32 -lm -lpthreadVC2
 
 clean:
 	rm -rf $(BUILD_DIR)/*
