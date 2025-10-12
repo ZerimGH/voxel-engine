@@ -85,9 +85,9 @@ World *create_world() {
   world->cx = 0;
   world->cy = 0;
   world->cz = 0;
-  world->rdx = 8;
+  world->rdx = 4;
   world->rdy = 4;
-  world->rdz = 8;
+  world->rdz = 4;
 
   world_load_chunks(world);
 

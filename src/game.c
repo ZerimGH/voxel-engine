@@ -76,7 +76,7 @@ void destroy_game(Game **game) {
 
 void update_game(Game *game) {
   if (!game) return;
-#define MOVE_SPEED 0.3f
+#define MOVE_SPEED 2.f
 #define SENS 0.0015f
   // Poll events, move camera
   if (nu_get_key_state(game->window, GLFW_KEY_S)) camera_move(game->camera, (vec3){0, 0, -MOVE_SPEED});
