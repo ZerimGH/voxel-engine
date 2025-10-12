@@ -54,12 +54,22 @@ typedef struct {
 #endif
 } World;
 
+typedef struct {
+  int hit_x, hit_y, hit_z; // Store the position the ray hit at
+  int last_x, last_y, last_z; // Store the last position of the ray before hit
+  bool hit; // Did it hit?
+  Block *block_hit; // Store the block that was hit
+} RayCastReturn;
+
 World *create_world();
 void destroy_world(World **world);
 void render_world(World *world, mat4 vp);
 void world_update_centre(World *world, int nx, int ny, int nz);
 bool world_update_queue(World *world);
-void world_set_block(World *world, BlockType block, int x, int y, int z);
 Block *world_get_block(World *world, int x, int y, int z);
+void world_set_block(World *world, BlockType block, int x, int y, int z);
+Block *world_get_blockf(World *world, float x, float y, float z);
+void world_set_blockf(World *world, BlockType block, float x, float y, float z);
+RayCastReturn world_raycast(World *world, float x, float y, float z, float dx, float dy, float dz, float max_dist);
 
 #endif

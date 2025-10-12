@@ -420,9 +420,9 @@ Block *world_get_block(World *world, int x, int y, int z) {
   if(!node) return NULL;
   Chunk *chunk = node->chunk;
   if(!chunk) return NULL;
-  size_t ccx = x < 0 ? (CHUNK_WIDTH - 1) - (-x) % CHUNK_WIDTH: x % CHUNK_WIDTH;
-  size_t ccy = y < 0 ? (CHUNK_WIDTH - 1) - (-y) % CHUNK_WIDTH: y % CHUNK_WIDTH;
-  size_t ccz = z < 0 ? (CHUNK_WIDTH - 1) - (-z) % CHUNK_WIDTH: z % CHUNK_WIDTH;
+  size_t ccx = x - (cx * CHUNK_WIDTH);
+  size_t ccy = y - (cy * CHUNK_HEIGHT);
+  size_t ccz = z - (cz * CHUNK_LENGTH);
   lock_chunk(chunk);
   Block *block = chunk_get_block(chunk, ccx, ccy, ccz);
   unlock_chunk(chunk);
@@ -438,9 +438,9 @@ void world_set_block(World *world, BlockType block, int x, int y, int z) {
   if(!node) return;
   Chunk *chunk = node->chunk;
   if(!chunk) return;
-  size_t ccx = x < 0 ? (CHUNK_WIDTH - 1) - (-x) % CHUNK_WIDTH: x % CHUNK_WIDTH;
-  size_t ccy = y < 0 ? (CHUNK_WIDTH - 1) - (-y) % CHUNK_WIDTH: y % CHUNK_WIDTH;
-  size_t ccz = z < 0 ? (CHUNK_WIDTH - 1) - (-z) % CHUNK_WIDTH: z % CHUNK_WIDTH;
+  size_t ccx = x - (cx * CHUNK_WIDTH);
+  size_t ccy = y - (cy * CHUNK_HEIGHT);
+  size_t ccz = z - (cz * CHUNK_LENGTH);
   lock_chunk(chunk);
   bool success = chunk_set_block(chunk, block, ccx, ccy, ccz);
   unlock_chunk(chunk);
@@ -450,3 +450,90 @@ void world_set_block(World *world, BlockType block, int x, int y, int z) {
   }
 }
 
+Block *world_get_blockf(World *world, float x, float y, float z) {
+  int ix = (int)floorf(x);
+  int iy = (int)floorf(y);
+  int iz = (int)floorf(z);
+  return world_get_block(world, ix, iy, iz); 
+}
+
+void world_set_blockf(World *world, BlockType block, float x, float y, float z) {
+  int ix = (int)floorf(x);
+  int iy = (int)floorf(y);
+  int iz = (int)floorf(z);
+  world_set_block(world, block, ix, iy, iz);
+}
+
+RayCastReturn world_raycast(World *world, float x, float y, float z, float dx, float dy, float dz, float max_dist) {
+  RayCastReturn ret = {0};
+  if(!world) return ret;
+  // Normalise direction vector
+  float d_mag = (dx * dx + dy * dy + dz * dz);
+  if(d_mag == 0.f) return ret;  // Handle 0 magnitude
+  dx /= d_mag;
+  dy /= d_mag;
+  dz /= d_mag;
+  // Get integer position of first block
+  int cur_x = (int)floorf(x);
+  int cur_y = (int)floorf(y);
+  int cur_z = (int)floorf(z);
+
+  int last_x = (int)floorf(x);
+  int last_y = (int)floorf(y);
+  int last_z = (int)floorf(z);
+  float dist = 0.f;
+
+  float tdx = fabsf(1.f / dx);
+  float tdy = fabsf(1.f / dy);
+  float tdz = fabsf(1.f / dz);
+
+  int step_x = (dx > 0) ? 1 : -1;
+  int step_y = (dy > 0) ? 1 : -1;
+  int step_z = (dz > 0) ? 1 : -1;
+
+  float tmx = (dx > 0) ? ((cur_x + 1 - x) / dx) : ((x - cur_x) / -dx);
+  float tmy = (dy > 0) ? ((cur_y + 1 - y) / dy) : ((y - cur_y) / -dy);
+  float tmz = (dz > 0) ? ((cur_z + 1 - z) / dz) : ((z - cur_z) / -dz);
+
+  while(dist < max_dist) {
+    Block *block = world_get_block(world, cur_x, cur_y, cur_z);
+    if(block && block->type != BlockAir) {
+      ret.hit = true;
+      ret.hit_x = cur_x;
+      ret.hit_y = cur_y;
+      ret.hit_z = cur_z;
+      ret.last_x = last_x;
+      ret.last_y = last_y;
+      ret.last_z = last_z;
+      ret.block_hit = block;
+      return ret;
+    }
+
+    last_x = cur_x;
+    last_z = cur_z;
+    last_y = cur_y;
+
+    if(tmx < tmy) {
+      if(tmx < tmz) {
+        cur_x += step_x;
+        dist = tmx;
+        tmx += tdx;
+      } else {
+        cur_z += step_z;
+        dist = tmz;
+        tmz += tdz;
+      }
+    } else {
+      if(tmy < tmz) {
+        cur_y += step_y;
+        dist = tmy;
+        tmy += tdy;
+      } else {
+        cur_z += step_z;
+        dist = tmz;
+        tmz += tdz;
+      }
+    }
+  }
+  return ret;
+}

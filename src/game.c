@@ -85,6 +85,22 @@ void update_game(Game *game) {
   if (nu_get_key_state(game->window, GLFW_KEY_D)) camera_move(game->camera, (vec3){MOVE_SPEED, 0, 0});
   if (nu_get_key_state(game->window, GLFW_KEY_SPACE)) camera_move(game->camera, (vec3){0, MOVE_SPEED, 0});
   if (nu_get_key_state(game->window, GLFW_KEY_LEFT_SHIFT)) camera_move(game->camera, (vec3){0, -MOVE_SPEED, 0});
+  // Break block on left click
+  if (game->window->mouse_left && !game->window->last_mouse_left) {
+    vec3 pos, dir; 
+    glm_vec3_copy(game->camera->position, pos);
+    camera_calculate_forward(game->camera, dir);
+    RayCastReturn ret = world_raycast(game->world, pos[0], pos[1], pos[2], dir[0], dir[1], dir[2], 5.f); 
+    if(ret.hit) world_set_block(game->world, BlockAir, ret.hit_x, ret.hit_y, ret.hit_z);
+  }
+  // Place block on right click
+  if (game->window->mouse_right && !game->window->last_mouse_right) {
+    vec3 pos, dir; 
+    glm_vec3_copy(game->camera->position, pos);
+    camera_calculate_forward(game->camera, dir);
+    RayCastReturn ret = world_raycast(game->world, pos[0], pos[1], pos[2], dir[0], dir[1], dir[2], 4.5f); 
+    if(ret.hit) world_set_block(game->world, BlockStone, ret.last_x, ret.last_y, ret.last_z);
+  }
   camera_rotate(game->camera, nu_get_delta_mouse_x(game->window) * SENS, -nu_get_delta_mouse_y(game->window) * SENS);
   nu_update_input(game->window);
 #undef MOVE_SPEED
