@@ -76,14 +76,14 @@ void destroy_chunk(Chunk **chunk) {
 
 bool chunk_set_block(Chunk *chunk, BlockType block, size_t x, size_t y, size_t z) {
   if(!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) return false;
-  if(!chunk->blocks || chunk->state != STATE_DONE) return false;
+  if(!chunk->blocks || chunk->state == STATE_EMPTY) return false;
   chunk->blocks[CHUNK_INDEX(x, y, z)] = (Block) {.type = block};
   return true;
 }
 
 Block *chunk_get_block(Chunk *chunk, size_t x, size_t y, size_t z) {
   if(!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) return NULL;
-  if(!chunk->blocks || chunk->state != STATE_DONE) return NULL;
+  if(!chunk->blocks || chunk->state == STATE_EMPTY) return NULL;
   return &chunk->blocks[CHUNK_INDEX(x, y, z)];
 }
 

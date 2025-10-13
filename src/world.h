@@ -19,7 +19,7 @@
 
 #define HASHMAP_SIZE 4096
 
-#define RENDER_DISTANCE 8 
+#define RENDER_DISTANCE 4 
 
 typedef struct ChunkNode {
   Chunk *chunk;

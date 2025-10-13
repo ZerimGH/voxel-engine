@@ -367,14 +367,29 @@ void player_update(Player *player, World *world) {
   glm_vec3_zero(player->movement);
 }
 
+static RayCastReturn player_eye_raycast(Player *player, World *world) {
+  float x, y, z;
+  x = player->camera->position[0]; 
+  y = player->camera->position[1] + 0.01; 
+  z = player->camera->position[2]; 
+  vec3 dir = {0};
+  camera_calculate_forward(player->camera, dir);
+  return world_raycast(world, x, y, z, dir[0], dir[1], dir[2], 4.5f);
+}
+
 // Break a block
 bool player_break(Player *player, World *world) {
-  // TODO
-  return false;
+  RayCastReturn ret = player_eye_raycast(player, world);
+  if(!ret.hit) return false;
+  world_set_block(world, BlockAir, ret.hit_x, ret.hit_y, ret.hit_z);
+  return true;
 }
 
 // Place a block
 bool player_place(Player *player, World *world) {
-  // TODO
-  return false;
+  RayCastReturn ret = player_eye_raycast(player, world);
+  if(!ret.hit) return false;
+  if(pos_collides_specific(player->position, player->hitbox_dims, ret.last_x, ret.last_y, ret.last_z)) return false;
+  world_set_block(world, BlockStone, ret.last_x, ret.last_y, ret.last_z);
+  return true;
 }
