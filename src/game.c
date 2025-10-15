@@ -7,6 +7,7 @@ Game *create_game(void) {
   Player *player = NULL;
   World *world = NULL;
   Game *game = NULL;
+  UiRenderer *ui_renderer = NULL;
 
   // Create window
   window = nu_create_window(600, 600, NULL, NULL);
@@ -38,6 +39,13 @@ Game *create_game(void) {
     goto failure;
   }
 
+  // Create ui_renderer
+  ui_renderer = create_ui_renderer();
+  if (!ui_renderer) {
+    sprintf(err_msg, "(create_game): Error creating game: create_ui_renderer() returned NULL\n");
+    goto failure;
+  }
+
   // Create game
   game = calloc(1, sizeof(Game));
   if (!game) {
@@ -53,6 +61,7 @@ failure:
   destroy_sky_renderer(&sky_renderer);
   destroy_player(&player);
   destroy_world(&world);
+  destroy_ui_renderer(&ui_renderer);
   if (game) free(game);
   return NULL;
 
@@ -62,6 +71,7 @@ success:
   game->sky_renderer = sky_renderer;
   game->player = player;
   game->world = world;
+  game->ui_renderer = ui_renderer;
   game->last_time = 0.f;
   game->this_time = glfwGetTime();
   return game;

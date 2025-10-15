@@ -8,6 +8,7 @@
 #include "nuGL.h"
 #include "sky.h"
 #include "world.h"
+#include "ui_renderer.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,6 +17,7 @@ typedef struct {
   SkyRenderer *sky_renderer;
   Player *player;
   World *world;
+  UiRenderer *ui_renderer; 
   float this_time, last_time;
 } Game;
 
