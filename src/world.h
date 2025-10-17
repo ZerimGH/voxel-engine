@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #ifdef MULTITHREAD
 #include <pthread.h>
@@ -19,7 +20,7 @@
 
 #define HASHMAP_SIZE 4096
 
-#define RENDER_DISTANCE 4 
+#define RENDER_DISTANCE 8 
 
 typedef struct ChunkNode {
   Chunk *chunk;

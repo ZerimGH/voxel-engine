@@ -89,9 +89,11 @@ void ui_render_quad(UiRenderer *ui, float x, float y, float w, float h, float sc
   float uScale[2] = {screen_w, screen_h};
   glDisable(GL_CULL_FACE);
   glDisable(GL_DEPTH_TEST);
+  glDepthMask(GL_FALSE);
   nu_set_uniform(ui->program, "uPos", uPos);
   nu_set_uniform(ui->program, "uScale", uScale);
   nu_use_program(ui->program);
   nu_render_mesh(ui->quad_mesh);
+  glDepthMask(GL_TRUE);
 }
 

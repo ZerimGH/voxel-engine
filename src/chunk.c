@@ -9,6 +9,20 @@ typedef struct {
   GLint side_index;
   GLint block_type;
 } Vertex;
+// 32 * 7 = 224 bytes per vertex
+// thats kinda crazy
+// Could send uniform chunk pos and use only 1 byte for each block offset
+// 3 bytes pos
+// Texcoords could be only one bit (only 0 or 1)
+// 2 bits tex
+// Side index only needs up to 6, so 3 bits
+// 3 bits side index
+// Block type depends how many blocks there are, so could use a byte
+// one byte side index
+// So 4.625 bytes per vertex
+// Or 37 bits per vertex
+// Probably needs to be padded up to 5 bytes
+// Can only pass as low as 4 bytes tho, so 8 bytes
 
 size_t vertex_num = 4;
 size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint), sizeof(GLint)};

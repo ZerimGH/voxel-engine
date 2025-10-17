@@ -9,6 +9,7 @@
 #include "sky.h"
 #include "world.h"
 #include "ui_renderer.h"
+#include "crosshair.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,6 +19,7 @@ typedef struct {
   Player *player;
   World *world;
   UiRenderer *ui_renderer; 
+  Crosshair *crosshair;
   float this_time, last_time;
 } Game;
 

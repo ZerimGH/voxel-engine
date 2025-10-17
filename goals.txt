@@ -5,6 +5,7 @@ LONG TERM (im putting these off):
   - Entities, player model, animations
 
 SHORT TERM (i will do these soon):
+  - Try circular buffer for queue
   - Player inventory / hotbar + ui
   - Fix greedy mesher (Weird bug where some pixels of the background show
     through the mesh)

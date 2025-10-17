@@ -105,6 +105,15 @@ void destroy_world(World **world) {
   nu_destroy_program(&(*world)->program);
   nu_destroy_texture(&(*world)->block_textures);
 
+  #ifdef MULTITHREAD
+  // Stop thread on world destroyed 
+  (*world)->kill = true;
+  pthread_join((*world)->chunk_thread, NULL);
+  pthread_mutex_destroy(&(*world)->hashmap_mutex);
+  pthread_mutex_destroy(&(*world)->queue_mutex);
+  #endif
+
+
   // Destroy every loaded chunk
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     ChunkNode *node = (*world)->map.buckets[i];
@@ -118,14 +127,6 @@ void destroy_world(World **world) {
 
   // Free queue
   if ((*world)->queue.items) free((*world)->queue.items);
-
-  #ifdef MULTITHREAD
-  // Stop thread on world destroyed 
-  (*world)->kill = true;
-  pthread_join((*world)->chunk_thread, NULL);
-  pthread_mutex_destroy(&(*world)->hashmap_mutex);
-  pthread_mutex_destroy(&(*world)->queue_mutex);
-  #endif
 
   free(*world);
   *world = NULL;
@@ -166,7 +167,6 @@ static bool world_queue_chunk(World *world, int x, int y, int z) {
 bool world_update_queue(World *world) {
   if (!world || !world->queue.items || world->queue.items_alloced == 0 || world->queue.num_items == 0) return false;
 
-  QueueItem item;
   world_lock_queue(world);
 
   // Check if queue can shrink
@@ -186,7 +186,25 @@ bool world_update_queue(World *world) {
     world_unlock_queue(world);
     return false;
   }
+  /*
+  QueueItem item;
   item = world->queue.items[--world->queue.num_items];
+  */
+  int min_dist_sqrd = INT_MAX;
+  int min_idx = 0;
+  for(size_t i = 0; i < world->queue.num_items; i++) {
+    QueueItem item = world->queue.items[i];
+    int dx = item.x - world->cx;
+    int dy = item.y - world->cy;
+    int dz = item.z - world->cz;
+    int dist_sqrd = dx * dx + dy * dy + dz * dz;
+    if(dist_sqrd < min_dist_sqrd) {
+      min_dist_sqrd = dist_sqrd;
+      min_idx = i;
+    }
+  }
+  QueueItem item = world->queue.items[min_idx];
+  world->queue.items[min_idx] = world->queue.items[world->queue.num_items - 1];
   world_unlock_queue(world);
 
   // If chunk is not loaded, exit early 

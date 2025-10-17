@@ -1,5 +1,10 @@
 #include "game.h"
 
+#define WIN_WIDTH 1920 
+#define WIN_HEIGHT 1080 
+
+#define FULLSCREEN true
+
 Game *create_game(void) {
   char err_msg[1024] = {0};
   nu_Window *window = NULL;
@@ -8,15 +13,18 @@ Game *create_game(void) {
   World *world = NULL;
   Game *game = NULL;
   UiRenderer *ui_renderer = NULL;
+  Crosshair *crosshair = NULL;
 
   // Create window
-  window = nu_create_window(600, 600, NULL, NULL);
+  window = nu_create_window(WIN_WIDTH, WIN_HEIGHT, NULL, FULLSCREEN);
   if (!window) {
     sprintf(err_msg, "(create_game): Error creating game: nu_create_window() returned NULL.\n");
     goto failure;
   }
 
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Create sky renderer
   sky_renderer = create_sky_renderer();
@@ -46,6 +54,13 @@ Game *create_game(void) {
     goto failure;
   }
 
+  // Create crosshair
+  crosshair = create_crosshair();
+  if (!ui_renderer) {
+    sprintf(err_msg, "(create_game): Error creating game: create_crosshair() returned NULL\n");
+    goto failure;
+  }
+
   // Create game
   game = calloc(1, sizeof(Game));
   if (!game) {
@@ -62,6 +77,7 @@ failure:
   destroy_player(&player);
   destroy_world(&world);
   destroy_ui_renderer(&ui_renderer);
+  destroy_crosshair(&crosshair);
   if (game) free(game);
   return NULL;
 
@@ -72,6 +88,7 @@ success:
   game->player = player;
   game->world = world;
   game->ui_renderer = ui_renderer;
+  game->crosshair = crosshair;
   game->last_time = 0.f;
   game->this_time = glfwGetTime();
   return game;
@@ -81,9 +98,12 @@ void destroy_game(Game **game) {
   if (!game || !(*game)) return;
   nu_destroy_window(&(*game)->window);
   destroy_sky_renderer(&(*game)->sky_renderer);
+  destroy_ui_renderer(&(*game)->ui_renderer);
+  destroy_crosshair(&(*game)->crosshair);
   destroy_player(&(*game)->player);
   destroy_world(&(*game)->world);
   free(*game);
+  *game = NULL;
 }
 
 void update_game(Game *game) {
@@ -104,8 +124,6 @@ void update_game(Game *game) {
   player_update(game->player, game->world);
   if (game->window->mouse_left && !game->window->last_mouse_left) player_break(game->player, game->world);
   if (game->window->mouse_right && !game->window->last_mouse_right) player_place(game->player, game->world);
-
-  nu_update_input(game->window); // Not sure why I have to update input after using?
   
   // Update world so chunks load around player 
   int nx = (int)(floorf(game->player->position[0] / CHUNK_WIDTH));
@@ -124,6 +142,8 @@ void update_game(Game *game) {
 
   // Set time
   game->last_time = game->this_time;
+
+  nu_update_input(game->window);
 }
 
 void render_game(Game *game) {
@@ -135,8 +155,10 @@ void render_game(Game *game) {
 
   // Render everything
   nu_start_frame(game->window);
+
   render_sky(game->sky_renderer, (float)game->window->height, game->player->camera->pitch, game->player->camera->fov);
   render_world(game->world, vp);
+  render_crosshair(game->crosshair, game->ui_renderer, (float)game->window->width, (float)game->window->height);
 
   nu_end_frame(game->window);
 }
