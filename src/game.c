@@ -107,11 +107,11 @@ void destroy_game(Game **game) {
   if (!game || !(*game)) return;
   nu_destroy_window(&(*game)->window);
   destroy_sky_renderer(&(*game)->sky_renderer);
+  destroy_player(&(*game)->player);
+  destroy_world(&(*game)->world);
   destroy_ui_renderer(&(*game)->ui_renderer);
   destroy_crosshair(&(*game)->crosshair);
-  destroy_player(&(*game)->player);
   destroy_clouds(&(*game)->clouds);
-  destroy_world(&(*game)->world);
   free(*game);
   *game = NULL;
 }
