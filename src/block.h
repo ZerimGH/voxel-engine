@@ -2,14 +2,17 @@
 
 #define BLOCK_H
 
-#define NUM_BLOCKS 3
+#define NUM_BLOCKS 5
 
 #define BLOCK_TEXTURES                                                         \
   "textures/dirt-top.png", "textures/dirt-side.png",                           \
       "textures/dirt-bottom.png", "textures/grass-top.png",                    \
       "textures/grass-side.png", "textures/grass-bottom.png",                  \
       "textures/stone-top.png", "textures/stone-side.png",                     \
-      "textures/stone-bottom.png"
+      "textures/stone-bottom.png", "textures/sand-top.png",                    \
+      "textures/sand-side.png", "textures/sand-bottom.png",                    \
+      "textures/log-top.png", "textures/log-side.png",                         \
+      "textures/log-bottom.png"
 
 #define NUM_BLOCK_TEXTURES (NUM_BLOCKS * 3)
 
@@ -18,6 +21,8 @@ typedef enum {
   BlockDirt,
   BlockGrass,
   BlockStone,
+  BlockSand,
+  BlockLog,
 } BlockType;
 
 typedef struct {
