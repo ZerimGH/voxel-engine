@@ -9,12 +9,11 @@ SHORT TERM (i will do these soon):
   - Try circular buffer for queue
   - Fix greedy mesher (Weird bug where some pixels of the background show
     through the mesh)
-  - Better terrain generation (biomes, trees, ores)
   - Lower memory usage (represent block types as uint8_t, optimise mesh
     lifetime, maybe even some vertex packing)
 
 RIGHT NOW (i am working on this):
-  - Fog
+  - Better terrain generation (biomes, trees, ores)
 
 DONE: 
   - Render cube
@@ -26,3 +25,5 @@ DONE:
   - Chunk manager (loading / unloading + meshing)
   - Multithreading
   - Player physics / movement
+  - Clouds / fog
+  - Crosshair 

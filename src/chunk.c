@@ -105,10 +105,6 @@ void generate_chunk(Chunk *chunk) {
     return;
   }
 
-#ifdef PROFILE_CHUNKGEN
-  START_TIMER(generate_chunk);
-#endif
-
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
   int ccz = chunk->coords[2] * CHUNK_LENGTH;
@@ -138,13 +134,7 @@ void generate_chunk(Chunk *chunk) {
   }
 
   chunk->state = STATE_NEEDS_MESH;
-
-#ifdef PROFILE_CHUNKGEN
-  END_TIMER(generate_chunk);
-#endif
 }
-
-#ifdef GREEDY
 
 static const int axis_uv[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 static const int dims[3] = {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_LENGTH};
@@ -198,9 +188,6 @@ void mesh_chunk(Chunk *chunk) {
   if (state != STATE_NEEDS_MESH) {
     return;
   }
-#ifdef PROFILE_CHUNKMESH
-  START_TIMER(mesh_chunk);
-#endif
 
   // Allocate array of mesh vertices
   size_t max_verts = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_LENGTH * 6;
@@ -372,133 +359,5 @@ void mesh_chunk(Chunk *chunk) {
   }
   free(verts);
 
-#ifdef PROFILE_CHUNKMESH
-  END_TIMER(mesh_chunk);
-#endif
-
   chunk->state = STATE_NEEDS_SEND;
 }
-#else
-
-Vertex cube[] = {
-    // Front face (+Z)
-    {{0, 0, 1}, {0, 0}, 0, 0},
-    {{1, 0, 1}, {1, 0}, 0, 0},
-    {{1, 1, 1}, {1, 1}, 0, 0},
-    {{0, 0, 1}, {0, 0}, 0, 0},
-    {{1, 1, 1}, {1, 1}, 0, 0},
-    {{0, 1, 1}, {0, 1}, 0, 0},
-
-    // Back face (-Z)
-    {{1, 0, 0}, {0, 0}, 1, 0},
-    {{0, 0, 0}, {1, 0}, 1, 0},
-    {{0, 1, 0}, {1, 1}, 1, 0},
-    {{1, 0, 0}, {0, 0}, 1, 0},
-    {{0, 1, 0}, {1, 1}, 1, 0},
-    {{1, 1, 0}, {0, 1}, 1, 0},
-
-    // Left face (-X)
-    {{0, 0, 0}, {0, 0}, 2, 0},
-    {{0, 0, 1}, {1, 0}, 2, 0},
-    {{0, 1, 1}, {1, 1}, 2, 0},
-    {{0, 0, 0}, {0, 0}, 2, 0},
-    {{0, 1, 1}, {1, 1}, 2, 0},
-    {{0, 1, 0}, {0, 1}, 2, 0},
-
-    // Right face (+X)
-    {{1, 0, 1}, {0, 0}, 3, 0},
-    {{1, 0, 0}, {1, 0}, 3, 0},
-    {{1, 1, 0}, {1, 1}, 3, 0},
-    {{1, 0, 1}, {0, 0}, 3, 0},
-    {{1, 1, 0}, {1, 1}, 3, 0},
-    {{1, 1, 1}, {0, 1}, 3, 0},
-
-    // Top face (+Y)
-    {{0, 1, 1}, {0, 0}, 4, 0},
-    {{1, 1, 1}, {1, 0}, 4, 0},
-    {{1, 1, 0}, {1, 1}, 4, 0},
-    {{0, 1, 1}, {0, 0}, 4, 0},
-    {{1, 1, 0}, {1, 1}, 4, 0},
-    {{0, 1, 0}, {0, 1}, 4, 0},
-
-    // Bottom face (-Y)
-    {{0, 0, 0}, {0, 0}, 5, 0},
-    {{1, 0, 0}, {1, 0}, 5, 0},
-    {{1, 0, 1}, {1, 1}, 5, 0},
-    {{0, 0, 0}, {0, 0}, 5, 0},
-    {{1, 0, 1}, {1, 1}, 5, 0},
-    {{0, 0, 1}, {0, 1}, 5, 0},
-};
-
-static inline bool is_solid(BlockType t) {
-  return t != BlockAir;
-}
-
-static void chunk_add_cube(Chunk *chunk, BlockType neighbours[6], size_t x, size_t y, size_t z, BlockType block_type) {
-  if (!chunk || !chunk->mesh || block_type == BlockAir) return;
-
-  int ccx = chunk->coords[0] * CHUNK_WIDTH;
-  int ccy = chunk->coords[1] * CHUNK_HEIGHT;
-  int ccz = chunk->coords[2] * CHUNK_LENGTH;
-
-  for (size_t face = 0; face < 6; face++) {
-    if (neighbours[face] != BlockAir) continue;
-
-    Vertex face_vertices[6];
-    memcpy(face_vertices, &cube[face * 6], sizeof(face_vertices));
-
-    for (size_t i = 0; i < 6; i++) {
-      face_vertices[i].pos[0] += ccx + (int)x;
-      face_vertices[i].pos[1] += ccy + (int)y;
-      face_vertices[i].pos[2] += ccz + (int)z;
-      face_vertices[i].block_type = block_type;
-    }
-
-    nu_mesh_add_bytes(chunk->mesh, sizeof(face_vertices), face_vertices);
-  }
-}
-
-void get_neighbours(Chunk *chunk, BlockType neighbours[6], size_t x, size_t y, size_t z) {
-  if (!chunk) return;
-
-  neighbours[0] = (z == CHUNK_LENGTH - 1) ? BlockAir : chunk->blocks[CHUNK_INDEX(x, y, z + 1)].type;
-  neighbours[1] = (z == 0) ? BlockAir : chunk->blocks[CHUNK_INDEX(x, y, z - 1)].type;
-  neighbours[2] = (x == 0) ? BlockAir : chunk->blocks[CHUNK_INDEX(x - 1, y, z)].type;
-  neighbours[3] = (x == CHUNK_WIDTH - 1) ? BlockAir : chunk->blocks[CHUNK_INDEX(x + 1, y, z)].type;
-  neighbours[4] = (y == CHUNK_HEIGHT - 1) ? BlockAir : chunk->blocks[CHUNK_INDEX(x, y + 1, z)].type;
-  neighbours[5] = (y == 0) ? BlockAir : chunk->blocks[CHUNK_INDEX(x, y - 1, z)].type;
-}
-
-void mesh_chunk(Chunk *chunk) {
-  if (!chunk || !chunk->blocks) return;
-
-#ifdef PROFILE_CHUNKMESH
-  START_TIMER(mesh_chunk);
-#endif
-
-  if (chunk->state != STATE_NEEDS_MESH) return;
-  if (chunk->mesh) nu_free_mesh(chunk->mesh);
-
-  for (size_t x = 0; x < CHUNK_WIDTH; x++) {
-    for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
-      for (size_t z = 0; z < CHUNK_LENGTH; z++) {
-        size_t idx = CHUNK_INDEX(x, y, z);
-        BlockType block = chunk->blocks[idx].type;
-
-        if (is_solid(block)) {
-          BlockType neighbours[6] = {BlockAir};
-          get_neighbours(chunk, neighbours, x, y, z);
-          chunk_add_cube(chunk, neighbours, x, y, z, block);
-        }
-      }
-    }
-  }
-
-  chunk->state = STATE_NEEDS_SEND;
-
-#ifdef PROFILE_CHUNKMESH
-  END_TIMER(mesh_chunk);
-#endif
-}
-
-#endif
