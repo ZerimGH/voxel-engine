@@ -46,7 +46,8 @@ Game *create_game(void) {
   }
 
   // Create world
-  world = create_world();
+  uint32_t seed = time(NULL);
+  world = create_world(seed);
   if (!world) {
     sprintf(
         err_msg,

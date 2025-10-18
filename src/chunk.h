@@ -45,7 +45,7 @@ typedef struct {
 // Function prototypes
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z);
 void destroy_chunk(Chunk **chunk);
-void generate_chunk(Chunk *chunk);
+void generate_chunk(Chunk *chunk, uint32_t seed);
 void mesh_chunk(Chunk *chunk);
 bool chunk_set_block(Chunk *chunk, BlockType block, size_t x, size_t y,
                      size_t z);

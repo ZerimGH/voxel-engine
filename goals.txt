@@ -25,5 +25,5 @@ DONE:
   - Chunk manager (loading / unloading + meshing)
   - Multithreading
   - Player physics / movement
-  - Clouds / fog
   - Crosshair 
+  - Clouds / fog

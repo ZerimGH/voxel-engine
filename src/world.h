@@ -50,6 +50,7 @@ typedef struct {
   size_t rdx, rdy, rdz;       // render distances in each axis
   int cx, cy, cz; // the centre of the world (where chunks load around)
   Queue queue;    // Queue of chunk coordinates to be generated and meshed
+  uint32_t seed;  // World seed
 #ifdef MULTITHREAD
   pthread_t chunk_thread; // The thread that will generate and mesh chunks
   // pthread_mutex_t hashmap_mutex; // Mutex protecting hashmap lookups /
@@ -68,7 +69,7 @@ typedef struct {
 } RayCastReturn;
 
 // Allocate, initialise and return a pointer to a world
-World *create_world();
+World *create_world(uint32_t world_seed);
 // Destroy all of a world's resources, and null the pointer
 void destroy_world(World **world);
 // Render a world given a player and an aspect

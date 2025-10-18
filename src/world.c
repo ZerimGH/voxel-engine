@@ -53,7 +53,7 @@ void *thread_routine(void *arg) {
 }
 #endif
 
-World *create_world() {
+World *create_world(uint32_t world_seed) {
   // Create the world's shader program
   nu_Program *program =
       nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
@@ -109,6 +109,7 @@ World *create_world() {
   world->rdx = RENDER_DISTANCE;
   world->rdy = RENDER_DISTANCE;
   world->rdz = RENDER_DISTANCE;
+  world->seed = world_seed;
   // Queue initial chunks
   world_load_chunks(world);
 
@@ -246,7 +247,7 @@ bool world_update_queue(World *world) {
 
   // Mesh and generate the chunk
   lock_chunk(chunk);
-  generate_chunk(chunk);
+  generate_chunk(chunk, world->seed);
   mesh_chunk(chunk);
   unlock_chunk(chunk);
   return true;
