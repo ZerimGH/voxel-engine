@@ -423,6 +423,6 @@ bool player_place(Player *player, World *world) {
   if (pos_collides_specific(player->position, player->hitbox_dims, ret.last_x,
                             ret.last_y, ret.last_z))
     return false;
-  world_set_block(world, BlockLog, ret.last_x, ret.last_y, ret.last_z);
+  world_set_block(world, NUM_BLOCKS, ret.last_x, ret.last_y, ret.last_z);
   return true;
 }
