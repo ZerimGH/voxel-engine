@@ -3,9 +3,9 @@
 #define CAMERA_H
 
 #include "cglm/cglm.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 typedef struct {
   vec3 position;

@@ -23,13 +23,15 @@
 // Create a player
 Player *create_player(void) {
   Player *player = calloc(1, sizeof(Player));
-  if(!player) {
-    fprintf(stderr, "(create_player): Error initialising player: calloc failed.\n");
+  if (!player) {
+    fprintf(stderr,
+            "(create_player): Error initialising player: calloc failed.\n");
     return NULL;
   }
   player->camera = create_camera(0.1, 512, WALKING_FOV);
-  if(!player->camera) {
-    fprintf(stderr, "(create_player): Error initialising player: create_camera() returned NULL/\n");
+  if (!player->camera) {
+    fprintf(stderr, "(create_player): Error initialising player: "
+                    "create_camera() returned NULL/\n");
     free(player);
     return NULL;
   }
@@ -61,8 +63,10 @@ Player *create_player(void) {
 }
 
 void destroy_player(Player **player) {
-  if(!player || !*player) return;
-  if((*player)->camera) destroy_camera(&(*player)->camera);
+  if (!player || !*player)
+    return;
+  if ((*player)->camera)
+    destroy_camera(&(*player)->camera);
   free(*player);
   *player = NULL;
 }
@@ -87,7 +91,9 @@ static void update_camera_pos(Player *player) {
       (PLAYER_EYE_HEIGHT - PLAYER_EYE_HEIGHT_CROUCHING) * player->crouch_interp;
   player->camera->position[2] = player->position[2];
   player->camera->fov = WALKING_FOV;
-  if(player->sprint_interp > 0.05f) player->camera->fov = WALKING_FOV + (SPRINTING_FOV - WALKING_FOV) * player->sprint_interp;
+  if (player->sprint_interp > 0.05f)
+    player->camera->fov =
+        WALKING_FOV + (SPRINTING_FOV - WALKING_FOV) * player->sprint_interp;
   player->camera->fov /= (player->zoom_interp * 3.f) + 1.f;
 }
 
@@ -127,20 +133,26 @@ void player_left(Player *player) {
 }
 
 void player_set_sprinting(Player *player, bool state) {
-  if(!player) return;
-  if(player->is_crouching) return;
-  if(state) player->is_sprinting = true;
+  if (!player)
+    return;
+  if (player->is_crouching)
+    return;
+  if (state)
+    player->is_sprinting = true;
   // Dont modify state if false, so the player can keep sprinting
 }
 
 void player_set_crouching(Player *player, bool state) {
-  if(!player) return;
+  if (!player)
+    return;
   player->is_crouching = state;
-  if(state) player->is_sprinting = false; // Can't sprint and crouch
+  if (state)
+    player->is_sprinting = false; // Can't sprint and crouch
 }
 
 void player_set_zooming(Player *player, bool state) {
-  if(!player) return;
+  if (!player)
+    return;
   player->is_zooming = state;
 }
 
@@ -149,8 +161,8 @@ void player_set_jumping(Player *player, bool state) {
 }
 
 // Check if a position is within a hitbox
-static bool pos_collides_specific(vec3 pos, vec3 hitbox_dims, float bx, float by,
-                           float bz) {
+static bool pos_collides_specific(vec3 pos, vec3 hitbox_dims, float bx,
+                                  float by, float bz) {
   float hx = hitbox_dims[0] * 0.5f;
   float hy = hitbox_dims[1] * 0.5f;
   float hz = hitbox_dims[2] * 0.5f;
@@ -242,7 +254,7 @@ static void player_normalise_movement(Player *player) {
   }
 }
 
-// Accelerate the player based on movement direction 
+// Accelerate the player based on movement direction
 static void player_apply_horizontal_movement(Player *player) {
   float accel = PLAYER_MOVE_ACCELERATION;
   // Normalise movement direction (if not crouching)
@@ -314,14 +326,15 @@ static void player_apply_friction(Player *player) {
 
 static void player_handle_jump(Player *player) {
   player->jump_time -= player->dt;
-  if(player->jump_time < 0.f) player->jump_time = 0.f;
-  if(player->is_jumping) {
-    if(player->grounded && player->jump_time == 0.f) {
+  if (player->jump_time < 0.f)
+    player->jump_time = 0.f;
+  if (player->is_jumping) {
+    if (player->grounded && player->jump_time == 0.f) {
       player->velocity[1] = sqrtf(2.f * fabsf(GRAVITY) * PLAYER_JUMP_HEIGHT);
       player->jump_time = 0.6f; // 0.6 seconds between jumps while holding
-    } 
-  }
-  else player->jump_time = 0.f; // Reset timer if not jumping
+    }
+  } else
+    player->jump_time = 0.f; // Reset timer if not jumping
 }
 
 static void player_check_grounded(Player *player, World *world) {
@@ -336,7 +349,7 @@ void player_update(Player *player, World *world) {
   // Check if grounded
   player_check_grounded(player, world);
 
-  // If the player is jumping, jump 
+  // If the player is jumping, jump
   player_handle_jump(player);
 
   // Movement normalisation
@@ -374,7 +387,8 @@ void player_update(Player *player, World *world) {
   }
 
   // If the player shouldn't keep sprinting, unsprint
-  if (!player->keep_sprint) player->is_sprinting = false; 
+  if (!player->keep_sprint)
+    player->is_sprinting = false;
   player->keep_sprint = false;
 
   player->last_grounded = player->grounded;
@@ -384,9 +398,9 @@ void player_update(Player *player, World *world) {
 
 static RayCastReturn player_eye_raycast(Player *player, World *world) {
   float x, y, z;
-  x = player->camera->position[0]; 
-  y = player->camera->position[1] + 0.01; 
-  z = player->camera->position[2]; 
+  x = player->camera->position[0];
+  y = player->camera->position[1] + 0.01;
+  z = player->camera->position[2];
   vec3 dir = {0};
   camera_calculate_forward(player->camera, dir);
   return world_raycast(world, x, y, z, dir[0], dir[1], dir[2], 4.5f);
@@ -395,7 +409,8 @@ static RayCastReturn player_eye_raycast(Player *player, World *world) {
 // Break a block
 bool player_break(Player *player, World *world) {
   RayCastReturn ret = player_eye_raycast(player, world);
-  if(!ret.hit) return false;
+  if (!ret.hit)
+    return false;
   world_set_block(world, BlockAir, ret.hit_x, ret.hit_y, ret.hit_z);
   return true;
 }
@@ -403,8 +418,11 @@ bool player_break(Player *player, World *world) {
 // Place a block
 bool player_place(Player *player, World *world) {
   RayCastReturn ret = player_eye_raycast(player, world);
-  if(!ret.hit) return false;
-  if(pos_collides_specific(player->position, player->hitbox_dims, ret.last_x, ret.last_y, ret.last_z)) return false;
+  if (!ret.hit)
+    return false;
+  if (pos_collides_specific(player->position, player->hitbox_dims, ret.last_x,
+                            ret.last_y, ret.last_z))
+    return false;
   world_set_block(world, BlockStone, ret.last_x, ret.last_y, ret.last_z);
   return true;
 }

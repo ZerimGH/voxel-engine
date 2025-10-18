@@ -4,13 +4,13 @@
 
 #define PLAYER_MAX_HEALTH 20
 
+#include "block.h"
 #include "camera.h"
 #include "cglm/cglm.h"
 #include "world.h"
-#include "block.h"
 
 typedef struct {
-  // Player's camera 
+  // Player's camera
   Camera *camera;
   // Size of the players hitbox, in blocks
   vec3 hitbox_dims;
@@ -52,7 +52,7 @@ void player_forwards(Player *player);
 void player_backwards(Player *player);
 void player_right(Player *player);
 void player_left(Player *player);
-// Other movement 
+// Other movement
 void player_set_jumping(Player *player, bool state);
 void player_set_crouching(Player *player, bool state);
 void player_set_sprinting(Player *player, bool state);

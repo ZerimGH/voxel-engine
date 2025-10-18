@@ -6,28 +6,32 @@ static ChunkNode *hashmap_get(World *world, int x, int y, int z);
 bool world_update_queue(World *world);
 
 static inline void world_lock_bucket(World *world, size_t bucket) {
-  if(!world || bucket >= HASHMAP_SIZE) return;
+  if (!world || bucket >= HASHMAP_SIZE)
+    return;
 #ifdef MULTITHREAD
   pthread_mutex_lock(&world->map.bucket_mutexes[bucket]);
 #endif
 }
 
 static inline void world_unlock_bucket(World *world, size_t bucket) {
-  if(!world || bucket >= HASHMAP_SIZE) return;
+  if (!world || bucket >= HASHMAP_SIZE)
+    return;
 #ifdef MULTITHREAD
   pthread_mutex_unlock(&world->map.bucket_mutexes[bucket]);
 #endif
 }
 
 static inline void world_lock_queue(World *world) {
-  if(!world) return;
+  if (!world)
+    return;
 #ifdef MULTITHREAD
   pthread_mutex_lock(&world->queue_mutex);
 #endif
 }
 
 static inline void world_unlock_queue(World *world) {
-  if(!world) return;
+  if (!world)
+    return;
 #ifdef MULTITHREAD
   pthread_mutex_unlock(&world->queue_mutex);
 #endif
@@ -36,7 +40,8 @@ static inline void world_unlock_queue(World *world) {
 #ifdef MULTITHREAD
 void *thread_routine(void *arg) {
   World *world = (World *)arg;
-  if (!world) return NULL;
+  if (!world)
+    return NULL;
   while (!world->kill) {
     if (!world_update_queue(world)) {
       usleep(1000);
@@ -50,9 +55,11 @@ void *thread_routine(void *arg) {
 
 World *create_world() {
   // Create the world's shader program
-  nu_Program *program = nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
+  nu_Program *program =
+      nu_create_program(2, "shaders/block.vert", "shaders/block.frag");
   if (!program) {
-    fprintf(stderr, "(create_world): Error creating world, nu_create_program() returned NULL.\n");
+    fprintf(stderr, "(create_world): Error creating world, nu_create_program() "
+                    "returned NULL.\n");
     return NULL;
   }
   nu_register_uniform(program, "uMVP", GL_FLOAT_MAT4);
@@ -60,9 +67,11 @@ World *create_world() {
   nu_register_uniform(program, "uRenderDistance", GL_FLOAT);
 
   // Load the texture array for blocks
-  nu_Texture *block_textures = nu_load_texture_array(NUM_BLOCK_TEXTURES, BLOCK_TEXTURES);
+  nu_Texture *block_textures =
+      nu_load_texture_array(NUM_BLOCK_TEXTURES, BLOCK_TEXTURES);
   if (!block_textures) {
-    fprintf(stderr, "(create_world): Error creating world, nu_load_texture_array() returned NULL.\n");
+    fprintf(stderr, "(create_world): Error creating world, "
+                    "nu_load_texture_array() returned NULL.\n");
     nu_destroy_program(&program);
     return NULL;
   }
@@ -85,8 +94,8 @@ World *create_world() {
 
 #ifdef MULTITHREAD
   pthread_create(&world->chunk_thread, NULL, thread_routine, (void *)world);
-  //pthread_mutex_init(&world->hashmap_mutex, NULL);
-  for(size_t i = 0; i < HASHMAP_SIZE; i++) {
+  // pthread_mutex_init(&world->hashmap_mutex, NULL);
+  for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     pthread_mutex_init(&world->map.bucket_mutexes[i], NULL);
   }
   pthread_mutex_init(&world->queue_mutex, NULL);
@@ -107,22 +116,22 @@ World *create_world() {
 }
 
 void destroy_world(World **world) {
-  if (!world || !(*world)) return;
+  if (!world || !(*world))
+    return;
   // Destroy rendering resources
   nu_destroy_program(&(*world)->program);
   nu_destroy_texture(&(*world)->block_textures);
 
-  #ifdef MULTITHREAD
-  // Stop thread on world destroyed 
+#ifdef MULTITHREAD
+  // Stop thread on world destroyed
   (*world)->kill = true;
   pthread_join((*world)->chunk_thread, NULL);
   // pthread_mutex_destroy(&(*world)->hashmap_mutex);
-  for(size_t i = 0; i < HASHMAP_SIZE; i++) {
+  for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     pthread_mutex_destroy(&(*world)->map.bucket_mutexes[i]);
   }
   pthread_mutex_destroy(&(*world)->queue_mutex);
-  #endif
-
+#endif
 
   // Destroy every loaded chunk
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
@@ -136,7 +145,8 @@ void destroy_world(World **world) {
   }
 
   // Free queue
-  if ((*world)->queue.items) free((*world)->queue.items);
+  if ((*world)->queue.items)
+    free((*world)->queue.items);
 
   free(*world);
   *world = NULL;
@@ -145,11 +155,13 @@ void destroy_world(World **world) {
 
 // Append a list of chunk coordinates to the queue
 static bool world_queue_chunk(World *world, int x, int y, int z) {
-  if (!world) return false;
+  if (!world)
+    return false;
   world_lock_queue(world);
   // If not allocated, allocate
   if (!world->queue.items || world->queue.items_alloced == 0) {
-    if (world->queue.items) free(world->queue.items);
+    if (world->queue.items)
+      free(world->queue.items);
     world->queue.items_alloced = 1024;
     world->queue.items = calloc(world->queue.items_alloced, sizeof(QueueItem));
     world->queue.num_items = 0;
@@ -158,7 +170,8 @@ static bool world_queue_chunk(World *world, int x, int y, int z) {
   // If queue is too small, double size
   if (world->queue.num_items >= world->queue.items_alloced) {
     world->queue.items_alloced *= 2;
-    QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced);
+    QueueItem *new_items = realloc(
+        world->queue.items, sizeof(QueueItem) * world->queue.items_alloced);
     if (!new_items) {
       world_unlock_queue(world);
       return false;
@@ -167,7 +180,8 @@ static bool world_queue_chunk(World *world, int x, int y, int z) {
   }
 
   // Append queue item
-  world->queue.items[world->queue.num_items++] = (QueueItem){.x = x, .y = y, .z = z};
+  world->queue.items[world->queue.num_items++] =
+      (QueueItem){.x = x, .y = y, .z = z};
   world_unlock_queue(world);
 
   return true;
@@ -175,15 +189,20 @@ static bool world_queue_chunk(World *world, int x, int y, int z) {
 
 // Pop from the queue, and generate + mesh that chunk
 bool world_update_queue(World *world) {
-  if (!world || !world->queue.items || world->queue.items_alloced == 0 || world->queue.num_items == 0) return false;
+  if (!world || !world->queue.items || world->queue.items_alloced == 0 ||
+      world->queue.num_items == 0)
+    return false;
 
   world_lock_queue(world);
 
   // Check if queue can shrink
-  if(world->queue.num_items < world->queue.items_alloced / 2 && world->queue.items_alloced > 1024) {
+  if (world->queue.num_items < world->queue.items_alloced / 2 &&
+      world->queue.items_alloced > 1024) {
     world->queue.items_alloced /= 2;
-    QueueItem *new_items = realloc(world->queue.items, sizeof(QueueItem) * world->queue.items_alloced); // Shrink queue 
-    if(!new_items) {
+    QueueItem *new_items =
+        realloc(world->queue.items,
+                sizeof(QueueItem) * world->queue.items_alloced); // Shrink queue
+    if (!new_items) {
       // Handle realloc failure
       world_unlock_queue(world);
       return false;
@@ -202,13 +221,13 @@ bool world_update_queue(World *world) {
   */
   int min_dist_sqrd = INT_MAX;
   int min_idx = 0;
-  for(size_t i = 0; i < world->queue.num_items; i++) {
+  for (size_t i = 0; i < world->queue.num_items; i++) {
     QueueItem item = world->queue.items[i];
     int dx = item.x - world->cx;
     int dy = item.y - world->cy;
     int dz = item.z - world->cz;
     int dist_sqrd = dx * dx + dy * dy + dz * dz;
-    if(dist_sqrd < min_dist_sqrd) {
+    if (dist_sqrd < min_dist_sqrd) {
       min_dist_sqrd = dist_sqrd;
       min_idx = i;
     }
@@ -217,11 +236,13 @@ bool world_update_queue(World *world) {
   world->queue.items[min_idx] = world->queue.items[world->queue.num_items - 1];
   world_unlock_queue(world);
 
-  // If chunk is not loaded, exit early 
+  // If chunk is not loaded, exit early
   ChunkNode *node = hashmap_get(world, item.x, item.y, item.z);
-  if (!node) return false;
+  if (!node)
+    return false;
   Chunk *chunk = node->chunk;
-  if (!chunk) return false; // This should never happen
+  if (!chunk)
+    return false; // This should never happen
 
   // Mesh and generate the chunk
   lock_chunk(chunk);
@@ -231,9 +252,10 @@ bool world_update_queue(World *world) {
   return true;
 }
 
-// Render every loaded chunk, and send meshed chunks to GPU 
+// Render every loaded chunk, and send meshed chunks to GPU
 void render_world(World *world, void *p, float aspect) {
-  if (!world || !p) return;
+  if (!world || !p)
+    return;
 
   Player *player = (Player *)p;
   nu_set_uniform(world->program, "uPlayerPos", player->position);
@@ -242,11 +264,11 @@ void render_world(World *world, void *p, float aspect) {
 
   // Set OpenGL parameters
   glEnable(GL_DEPTH_TEST);
-  #ifdef GREEDY 
-  glDisable(GL_CULL_FACE);  // Greedy meshing bug isnt visible without backface
-  #else                     // culling
+#ifdef GREEDY
+  glDisable(GL_CULL_FACE); // Greedy meshing bug isnt visible without backface
+#else                      // culling
   glEnable(GL_CULL_FACE);
-  #endif
+#endif
 
   // Use and upload VP matrix to program
   mat4 vp;
@@ -283,10 +305,7 @@ static inline uint32_t hash_chunk_coords(int x, int y, int z) {
   return (uint32_t)(x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
 }
 
-
-static inline float lerp(float a, float b, float t) {
-  return a + (b - a) * t;
-}
+static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 static uint32_t get_bucket(int x, int y, int z) {
   uint32_t bucket = hash_chunk_coords(x, y, z) % HASHMAP_SIZE;
@@ -294,7 +313,8 @@ static uint32_t get_bucket(int x, int y, int z) {
 }
 
 static ChunkNode *hashmap_get(World *world, int x, int y, int z) {
-  if (!world) return NULL;
+  if (!world)
+    return NULL;
   uint32_t bucket = get_bucket(x, y, z);
   world_lock_bucket(world, bucket);
   ChunkNode *node = world->map.buckets[bucket];
@@ -335,8 +355,11 @@ static void hashmap_remove(World *world, int x, int y, int z) {
 */
 
 static void hashmap_append(World *world, Chunk *chunk) {
-  if (!world || !chunk || hashmap_get(world, chunk->coords[0], chunk->coords[1], chunk->coords[2])) {
-    if (chunk) destroy_chunk(&chunk);
+  if (!world || !chunk ||
+      hashmap_get(world, chunk->coords[0], chunk->coords[1],
+                  chunk->coords[2])) {
+    if (chunk)
+      destroy_chunk(&chunk);
     return;
   }
   int x = chunk->coords[0];
@@ -374,9 +397,10 @@ static void hashmap_append(World *world, Chunk *chunk) {
   world_unlock_bucket(world, bucket);
 }
 
-// Create chunks that are in render distance, if not already loaded 
+// Create chunks that are in render distance, if not already loaded
 static void world_load_chunks(World *world) {
-  if (!world) return;
+  if (!world)
+    return;
   for (int x = (int)-world->rdx; x <= (int)world->rdx; x++) {
     for (int y = (int)-world->rdy; y <= (int)world->rdy; y++) {
       for (int z = (int)-world->rdz; z <= (int)world->rdz; z++) {
@@ -398,7 +422,8 @@ static void world_load_chunks(World *world) {
 
 // Destroy chunks that are out of render distance
 static void world_unload_chunks(World *world) {
-  if (!world) return;
+  if (!world)
+    return;
   size_t count = 0;
 
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
@@ -434,8 +459,10 @@ static void world_unload_chunks(World *world) {
 
 // Update the position that chunks load around
 void world_update_centre(World *world, int nx, int ny, int nz) {
-  if (!world) return;
-  if (nx == world->cx && ny == world->cy && nz == world->cz) return;
+  if (!world)
+    return;
+  if (nx == world->cx && ny == world->cy && nz == world->cz)
+    return;
   world->cx = nx;
   world->cy = ny;
   world->cz = nz;
@@ -444,14 +471,17 @@ void world_update_centre(World *world, int nx, int ny, int nz) {
 }
 
 Block *world_get_block(World *world, int x, int y, int z) {
-  if(!world) return NULL;
+  if (!world)
+    return NULL;
   int cx = (int)floorf((float)x / (float)CHUNK_WIDTH);
   int cy = (int)floorf((float)y / (float)CHUNK_HEIGHT);
   int cz = (int)floorf((float)z / (float)CHUNK_LENGTH);
   ChunkNode *node = hashmap_get(world, cx, cy, cz);
-  if(!node) return NULL;
+  if (!node)
+    return NULL;
   Chunk *chunk = node->chunk;
-  if(!chunk) return NULL;
+  if (!chunk)
+    return NULL;
   size_t ccx = x - (cx * CHUNK_WIDTH);
   size_t ccy = y - (cy * CHUNK_HEIGHT);
   size_t ccz = z - (cz * CHUNK_LENGTH);
@@ -462,21 +492,24 @@ Block *world_get_block(World *world, int x, int y, int z) {
 }
 
 void world_set_block(World *world, BlockType block, int x, int y, int z) {
-  if(!world) return;
+  if (!world)
+    return;
   int cx = (int)floorf((float)x / (float)CHUNK_WIDTH);
   int cy = (int)floorf((float)y / (float)CHUNK_HEIGHT);
   int cz = (int)floorf((float)z / (float)CHUNK_LENGTH);
   ChunkNode *node = hashmap_get(world, cx, cy, cz);
-  if(!node) return;
+  if (!node)
+    return;
   Chunk *chunk = node->chunk;
-  if(!chunk) return;
+  if (!chunk)
+    return;
   size_t ccx = x - (cx * CHUNK_WIDTH);
   size_t ccy = y - (cy * CHUNK_HEIGHT);
   size_t ccz = z - (cz * CHUNK_LENGTH);
   lock_chunk(chunk);
   bool success = chunk_set_block(chunk, block, ccx, ccy, ccz);
   unlock_chunk(chunk);
-  if(success) {
+  if (success) {
     chunk->state = STATE_NEEDS_MESH;
     world_queue_chunk(world, cx, cy, cz);
   }
@@ -486,22 +519,26 @@ Block *world_get_blockf(World *world, float x, float y, float z) {
   int ix = (int)floorf(x);
   int iy = (int)floorf(y);
   int iz = (int)floorf(z);
-  return world_get_block(world, ix, iy, iz); 
+  return world_get_block(world, ix, iy, iz);
 }
 
-void world_set_blockf(World *world, BlockType block, float x, float y, float z) {
+void world_set_blockf(World *world, BlockType block, float x, float y,
+                      float z) {
   int ix = (int)floorf(x);
   int iy = (int)floorf(y);
   int iz = (int)floorf(z);
   world_set_block(world, block, ix, iy, iz);
 }
 
-RayCastReturn world_raycast(World *world, float x, float y, float z, float dx, float dy, float dz, float max_dist) {
+RayCastReturn world_raycast(World *world, float x, float y, float z, float dx,
+                            float dy, float dz, float max_dist) {
   RayCastReturn ret = {0};
-  if(!world) return ret;
+  if (!world)
+    return ret;
   // Normalise direction vector
   float d_mag = (dx * dx + dy * dy + dz * dz);
-  if(d_mag == 0.f) return ret;  // Handle 0 magnitude
+  if (d_mag == 0.f)
+    return ret; // Handle 0 magnitude
   dx /= d_mag;
   dy /= d_mag;
   dz /= d_mag;
@@ -527,9 +564,9 @@ RayCastReturn world_raycast(World *world, float x, float y, float z, float dx, f
   float tmy = (dy > 0) ? ((cur_y + 1 - y) / dy) : ((y - cur_y) / -dy);
   float tmz = (dz > 0) ? ((cur_z + 1 - z) / dz) : ((z - cur_z) / -dz);
 
-  while(dist < max_dist) {
+  while (dist < max_dist) {
     Block *block = world_get_block(world, cur_x, cur_y, cur_z);
-    if(block && block->type != BlockAir) {
+    if (block && block->type != BlockAir) {
       ret.hit = true;
       ret.hit_x = cur_x;
       ret.hit_y = cur_y;
@@ -545,8 +582,8 @@ RayCastReturn world_raycast(World *world, float x, float y, float z, float dx, f
     last_z = cur_z;
     last_y = cur_y;
 
-    if(tmx < tmy) {
-      if(tmx < tmz) {
+    if (tmx < tmy) {
+      if (tmx < tmz) {
         cur_x += step_x;
         dist = tmx;
         tmx += tdx;
@@ -556,7 +593,7 @@ RayCastReturn world_raycast(World *world, float x, float y, float z, float dx, f
         tmz += tdz;
       }
     } else {
-      if(tmy < tmz) {
+      if (tmy < tmz) {
         cur_y += step_y;
         dist = tmy;
         tmy += tdy;

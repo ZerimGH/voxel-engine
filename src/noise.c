@@ -23,13 +23,12 @@ static inline int hash_coords_2d(int x, int y, uint32_t seed) {
 
 // Hash 3 coordinates
 static inline int hash_coords_3d(int x, int y, int z, uint32_t seed) {
-  uint64_t n = (uint64_t)x * 73856093ULL ^ (uint64_t)y * 19349663ULL ^ (uint64_t)z * 83492791ULL;
+  uint64_t n = (uint64_t)x * 73856093ULL ^ (uint64_t)y * 19349663ULL ^
+               (uint64_t)z * 83492791ULL;
   return (int)hash6432shift(n, seed);
 }
 
-static inline float lerp(float a, float b, float t) {
-  return a + (b - a) * t;
-}
+static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
 // Generate a single 2D noise value at a resolution
 float noise_2d(float x, float z, int res, uint32_t seed) {
@@ -53,12 +52,15 @@ float noise_2d(float x, float z, int res, uint32_t seed) {
 }
 
 // Layer 2D noise with varying amplitudes and frequencies
-float octave_noise_2d(float x, float z, int octaves, float persistence, float lacunarity, int base_res, uint32_t seed) {
+float octave_noise_2d(float x, float z, int octaves, float persistence,
+                      float lacunarity, int base_res, uint32_t seed) {
   float total = 0.0f, frequency = 1.0f, amplitude = 1.0f, maxValue = 0.0f;
 
   for (int i = 0; i < octaves; i++) {
     int res = (int)fmaxf(1.0f, base_res / frequency);
-    total += noise_2d(x * frequency + i * 54209, z * frequency + i * 82731, res, seed) * amplitude;
+    total += noise_2d(x * frequency + i * 54209, z * frequency + i * 82731, res,
+                      seed) *
+             amplitude;
     maxValue += amplitude;
     amplitude *= persistence;
     frequency *= lacunarity;
@@ -103,12 +105,15 @@ float noise_3d(float x, float y, float z, int res, uint32_t seed) {
 }
 
 // Layer 3D noise with varying amplitudes and frequencies
-float octave_noise_3d(float x, float y, float z, int octaves, float persistence, float lacunarity, int base_res, uint32_t seed) {
+float octave_noise_3d(float x, float y, float z, int octaves, float persistence,
+                      float lacunarity, int base_res, uint32_t seed) {
   float total = 0.0f, frequency = 1.0f, amplitude = 1.0f, maxValue = 0.0f;
 
   for (int i = 0; i < octaves; i++) {
     int res = (int)fmaxf(1.0f, base_res / frequency);
-    total += noise_3d(x * frequency + i * 54209, y * frequency + i * 129871, z * frequency + i * 82731, res, seed) * amplitude;
+    total += noise_3d(x * frequency + i * 54209, y * frequency + i * 129871,
+                      z * frequency + i * 82731, res, seed) *
+             amplitude;
     maxValue += amplitude;
     amplitude *= persistence;
     frequency *= lacunarity;

@@ -1,7 +1,7 @@
 #include "game.h"
 
-#define WIN_WIDTH 1920 
-#define WIN_HEIGHT 1080 
+#define WIN_WIDTH 1920
+#define WIN_HEIGHT 1080
 
 #define FULLSCREEN true
 
@@ -19,7 +19,8 @@ Game *create_game(void) {
   // Create window
   window = nu_create_window(WIN_WIDTH, WIN_HEIGHT, NULL, FULLSCREEN);
   if (!window) {
-    sprintf(err_msg, "(create_game): Error creating game: nu_create_window() returned NULL.\n");
+    sprintf(err_msg, "(create_game): Error creating game: nu_create_window() "
+                     "returned NULL.\n");
     goto failure;
   }
 
@@ -30,51 +31,62 @@ Game *create_game(void) {
   // Create sky renderer
   sky_renderer = create_sky_renderer();
   if (!sky_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: create_sky_renderer() returned NULL\n");
+    sprintf(err_msg, "(create_game): Error creating game: "
+                     "create_sky_renderer() returned NULL\n");
     goto failure;
   }
 
   // Create camera
   player = create_player();
   if (!player) {
-    sprintf(err_msg, "(create_game): Error creating game: create_player() returned NULL\n");
+    sprintf(
+        err_msg,
+        "(create_game): Error creating game: create_player() returned NULL\n");
     goto failure;
   }
 
   // Create world
   world = create_world();
   if (!world) {
-    sprintf(err_msg, "(create_game): Error creating game: create_world() returned NULL\n");
+    sprintf(
+        err_msg,
+        "(create_game): Error creating game: create_world() returned NULL\n");
     goto failure;
   }
 
   // Create ui_renderer
   ui_renderer = create_ui_renderer();
   if (!ui_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: create_ui_renderer() returned NULL\n");
+    sprintf(err_msg, "(create_game): Error creating game: create_ui_renderer() "
+                     "returned NULL\n");
     goto failure;
   }
 
   // Create crosshair
   crosshair = create_crosshair();
   if (!ui_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: create_crosshair() returned NULL\n");
+    sprintf(err_msg, "(create_game): Error creating game: create_crosshair() "
+                     "returned NULL\n");
     goto failure;
   }
 
   clouds = create_clouds();
-  if(!clouds) {
-    sprintf(err_msg, "(create_game): Error creating game: create_clouds() returned NULL\n");
+  if (!clouds) {
+    sprintf(
+        err_msg,
+        "(create_game): Error creating game: create_clouds() returned NULL\n");
     goto failure;
   }
 
   // Create game
   game = calloc(1, sizeof(Game));
   if (!game) {
-    sprintf(err_msg, "(create_game): Error creating game: calloc failed for Game *game.\n");
+    sprintf(
+        err_msg,
+        "(create_game): Error creating game: calloc failed for Game *game.\n");
     goto failure;
   }
-  
+
   goto success;
 
 failure:
@@ -86,7 +98,8 @@ failure:
   destroy_ui_renderer(&ui_renderer);
   destroy_crosshair(&crosshair);
   destroy_clouds(&clouds);
-  if (game) free(game);
+  if (game)
+    free(game);
   return NULL;
 
 success:
@@ -104,7 +117,8 @@ success:
 }
 
 void destroy_game(Game **game) {
-  if (!game || !(*game)) return;
+  if (!game || !(*game))
+    return;
   nu_destroy_window(&(*game)->window);
   destroy_sky_renderer(&(*game)->sky_renderer);
   destroy_player(&(*game)->player);
@@ -117,26 +131,40 @@ void destroy_game(Game **game) {
 }
 
 void update_game(Game *game) {
-  if (!game) return;
+  if (!game)
+    return;
   // Get the time of this frame
   game->this_time = glfwGetTime();
 
   // Update player based on input
   game->player->dt = game->this_time - game->last_time;
-  if (nu_get_key_state(game->window, GLFW_KEY_S)) player_backwards(game->player);
-  if (nu_get_key_state(game->window, GLFW_KEY_W)) player_forwards(game->player);
-  if (nu_get_key_state(game->window, GLFW_KEY_A)) player_left(game->player);
-  if (nu_get_key_state(game->window, GLFW_KEY_D)) player_right(game->player);
-  player_set_jumping(game->player, nu_get_key_state(game->window, GLFW_KEY_SPACE));
-  player_set_crouching(game->player, nu_get_key_state(game->window, GLFW_KEY_LEFT_SHIFT));
-  player_set_sprinting(game->player, nu_get_key_pressed(game->window, GLFW_KEY_LEFT_CONTROL) || (nu_get_key_pressed(game->window, GLFW_KEY_W) && nu_get_key_state(game->window, GLFW_KEY_LEFT_CONTROL)));
+  if (nu_get_key_state(game->window, GLFW_KEY_S))
+    player_backwards(game->player);
+  if (nu_get_key_state(game->window, GLFW_KEY_W))
+    player_forwards(game->player);
+  if (nu_get_key_state(game->window, GLFW_KEY_A))
+    player_left(game->player);
+  if (nu_get_key_state(game->window, GLFW_KEY_D))
+    player_right(game->player);
+  player_set_jumping(game->player,
+                     nu_get_key_state(game->window, GLFW_KEY_SPACE));
+  player_set_crouching(game->player,
+                       nu_get_key_state(game->window, GLFW_KEY_LEFT_SHIFT));
+  player_set_sprinting(
+      game->player,
+      nu_get_key_pressed(game->window, GLFW_KEY_LEFT_CONTROL) ||
+          (nu_get_key_pressed(game->window, GLFW_KEY_W) &&
+           nu_get_key_state(game->window, GLFW_KEY_LEFT_CONTROL)));
   player_set_zooming(game->player, nu_get_key_state(game->window, GLFW_KEY_F));
-  player_rotate(game->player, nu_get_delta_mouse_x(game->window), -nu_get_delta_mouse_y(game->window));
+  player_rotate(game->player, nu_get_delta_mouse_x(game->window),
+                -nu_get_delta_mouse_y(game->window));
   player_update(game->player, game->world);
-  if (game->window->mouse_left && !game->window->last_mouse_left) player_break(game->player, game->world);
-  if (game->window->mouse_right && !game->window->last_mouse_right) player_place(game->player, game->world);
-  
-  // Update world so chunks load around player 
+  if (game->window->mouse_left && !game->window->last_mouse_left)
+    player_break(game->player, game->world);
+  if (game->window->mouse_right && !game->window->last_mouse_right)
+    player_place(game->player, game->world);
+
+  // Update world so chunks load around player
   int nx = (int)(floorf(game->player->position[0] / CHUNK_WIDTH));
   int ny = (int)(floorf(game->player->position[1] / CHUNK_HEIGHT));
   int nz = (int)(floorf(game->player->position[2] / CHUNK_LENGTH));
@@ -147,7 +175,8 @@ void update_game(Game *game) {
   float time_budget = 1.f / 120.f;
   float start_time = glfwGetTime();
   do {
-    if (!world_update_queue(game->world)) break;
+    if (!world_update_queue(game->world))
+      break;
   } while (glfwGetTime() - start_time < time_budget);
 #endif
 
@@ -158,7 +187,8 @@ void update_game(Game *game) {
 }
 
 void render_game(Game *game) {
-  if (!game) return;
+  if (!game)
+    return;
   // Calculate camera's vp
   mat4 vp = {0};
   float aspect = (float)game->window->width / (float)game->window->height;
@@ -167,15 +197,18 @@ void render_game(Game *game) {
   // Render everything
   nu_start_frame(game->window);
 
-  render_sky(game->sky_renderer, (float)game->window->height, game->player->camera->pitch, game->player->camera->fov);
+  render_sky(game->sky_renderer, (float)game->window->height,
+             game->player->camera->pitch, game->player->camera->fov);
   render_world(game->world, game->player, aspect);
-  render_clouds(game->clouds, game->player, game->this_time, aspect); 
-  render_crosshair(game->crosshair, game->ui_renderer, (float)game->window->width, (float)game->window->height);
+  render_clouds(game->clouds, game->player, game->this_time, aspect);
+  render_crosshair(game->crosshair, game->ui_renderer,
+                   (float)game->window->width, (float)game->window->height);
 
   nu_end_frame(game->window);
 }
 
 bool game_over(Game *game) {
-  if (!game) return true;
+  if (!game)
+    return true;
   return glfwWindowShouldClose(game->window->glfw_window);
 }

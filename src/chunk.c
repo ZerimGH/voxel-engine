@@ -25,14 +25,18 @@ typedef struct {
 // Can only pass as low as 4 bytes tho, so 8 bytes
 
 size_t vertex_num = 4;
-size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint), sizeof(GLint)};
+size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint),
+                         sizeof(GLint)};
 size_t vertex_counts[] = {3, 2, 1, 1};
 GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT, GL_INT, GL_INT};
 
 Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   Chunk *chunk = calloc(1, sizeof(Chunk));
   if (!chunk) {
-    fprintf(stderr, "(create_chunk): Couldn't create chunk at position (%d, %d, %d), calloc failed.\n", chunk_x, chunk_y, chunk_z);
+    fprintf(stderr,
+            "(create_chunk): Couldn't create chunk at position (%d, %d, %d), "
+            "calloc failed.\n",
+            chunk_x, chunk_y, chunk_z);
     return NULL;
   }
   chunk->coords[0] = chunk_x;
@@ -40,7 +44,8 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   chunk->coords[2] = chunk_z;
   chunk->blocks = NULL;
   chunk->num_blocks = 0;
-  chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
+  chunk->mesh =
+      nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
   chunk->state = STATE_EMPTY;
 #ifdef MULTITHREAD
   pthread_mutex_init(&chunk->chunk_mutex, NULL);
@@ -49,23 +54,27 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
 }
 
 void lock_chunk(Chunk *chunk) {
-  if(!chunk) return;
+  if (!chunk)
+    return;
 #ifdef MULTITHREAD
   pthread_mutex_lock(&chunk->chunk_mutex);
 #endif
 }
 
 void unlock_chunk(Chunk *chunk) {
-  if(!chunk) return;
+  if (!chunk)
+    return;
 #ifdef MULTITHREAD
   pthread_mutex_unlock(&chunk->chunk_mutex);
 #endif
 }
 
 void destroy_chunk(Chunk **chunk) {
-  if (!chunk || !(*chunk)) return;
+  if (!chunk || !(*chunk))
+    return;
   lock_chunk(*chunk);
-  if ((*chunk)->mesh) nu_destroy_mesh(&(*chunk)->mesh);
+  if ((*chunk)->mesh)
+    nu_destroy_mesh(&(*chunk)->mesh);
   if ((*chunk)->blocks) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
@@ -77,31 +86,41 @@ void destroy_chunk(Chunk **chunk) {
   *chunk = NULL;
 }
 
-bool chunk_set_block(Chunk *chunk, BlockType block, size_t x, size_t y, size_t z) {
-  if(!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) return false;
-  if(!chunk->blocks || chunk->state == STATE_EMPTY) return false;
-  chunk->blocks[CHUNK_INDEX(x, y, z)] = (Block) {.type = block};
+bool chunk_set_block(Chunk *chunk, BlockType block, size_t x, size_t y,
+                     size_t z) {
+  if (!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH)
+    return false;
+  if (!chunk->blocks || chunk->state == STATE_EMPTY)
+    return false;
+  chunk->blocks[CHUNK_INDEX(x, y, z)] = (Block){.type = block};
   return true;
 }
 
 Block *chunk_get_block(Chunk *chunk, size_t x, size_t y, size_t z) {
-  if(!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) return NULL;
-  if(!chunk->blocks || chunk->state == STATE_EMPTY) return NULL;
+  if (!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH)
+    return NULL;
+  if (!chunk->blocks || chunk->state == STATE_EMPTY)
+    return NULL;
   return &chunk->blocks[CHUNK_INDEX(x, y, z)];
 }
 
 #define WORLD_SEED 1
 
 void generate_chunk(Chunk *chunk) {
-  if (!chunk) return;
+  if (!chunk)
+    return;
   ChunkState state = chunk->state;
   if (state != STATE_EMPTY) {
     return;
   }
-  if (chunk->blocks) free(chunk->blocks);
+  if (chunk->blocks)
+    free(chunk->blocks);
   chunk->blocks = calloc(CHUNK_VOLUME, sizeof(Block));
   if (!chunk->blocks) {
-    fprintf(stderr, "(generate_chunk): Couldn't generate chunk at coords (%d, %d, %d), calloc failed.\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
+    fprintf(stderr,
+            "(generate_chunk): Couldn't generate chunk at coords (%d, %d, %d), "
+            "calloc failed.\n",
+            chunk->coords[0], chunk->coords[1], chunk->coords[2]);
     return;
   }
 
@@ -144,7 +163,8 @@ static const int dims[3] = {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_LENGTH};
 // 1 = Transparent
 // 2 = Solid
 static inline int block_render_type(BlockType t) {
-  if (t == BlockAir) return 0;
+  if (t == BlockAir)
+    return 0;
   /*
   if (t == BlockWater || t == BlockGlass)
     return 1;
@@ -153,10 +173,14 @@ static inline int block_render_type(BlockType t) {
 }
 
 // Write a face to a vertex buffer
-static inline void emit_face(Vertex *target, size_t *count, float p[4][3], float s[4], float t[4], bool face_positive, bool flip_winding, int side_index, int block_type) {
-#define EMIT(i)                                                                                                                                                                                        \
-  target[(*count)++] = (Vertex) {                                                                                                                                                                      \
-    {roundf(p[i][0]), roundf(p[i][1]), roundf(p[i][2])}, {s[i], t[i]}, side_index, block_type                                                                                                          \
+static inline void emit_face(Vertex *target, size_t *count, float p[4][3],
+                             float s[4], float t[4], bool face_positive,
+                             bool flip_winding, int side_index,
+                             int block_type) {
+#define EMIT(i)                                                                \
+  target[(*count)++] = (Vertex) {                                              \
+    {roundf(p[i][0]), roundf(p[i][1]), roundf(p[i][2])}, {s[i], t[i]},         \
+        side_index, block_type                                                 \
   }
 
   static const unsigned int faces[2][6] = {
@@ -173,7 +197,8 @@ static inline void emit_face(Vertex *target, size_t *count, float p[4][3], float
   if (!face_positive) // invert winding for negative direction faces
     indices = (indices == faces[0]) ? faces[1] : faces[0];
 
-  for (int i = 0; i < 6; i++) EMIT(indices[i]);
+  for (int i = 0; i < 6; i++)
+    EMIT(indices[i]);
 
 #undef EMIT
 }
@@ -181,8 +206,10 @@ static inline void emit_face(Vertex *target, size_t *count, float p[4][3], float
 // Greedy meshing
 void mesh_chunk(Chunk *chunk) {
 
-  if (!chunk) return;
-  if (!chunk->blocks) return;
+  if (!chunk)
+    return;
+  if (!chunk->blocks)
+    return;
 
   ChunkState state = chunk->state;
   if (state != STATE_NEEDS_MESH) {
@@ -223,10 +250,18 @@ void mesh_chunk(Chunk *chunk) {
           coords[axis] = slice;
 
           // Get the current, and the next block in this axis
-          BlockType blockA = (coords[axis] >= 0 && coords[axis] < dims[axis]) ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])].type : BlockAir;
+          BlockType blockA =
+              (coords[axis] >= 0 && coords[axis] < dims[axis])
+                  ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])]
+                        .type
+                  : BlockAir;
 
           coords[axis] = slice + 1;
-          BlockType blockB = (coords[axis] >= 0 && coords[axis] < dims[axis]) ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])].type : BlockAir;
+          BlockType blockB =
+              (coords[axis] >= 0 && coords[axis] < dims[axis])
+                  ? chunk->blocks[CHUNK_INDEX(coords[0], coords[1], coords[2])]
+                        .type
+                  : BlockAir;
 
           int ra = block_render_type(blockA);
           int rb = block_render_type(blockB);
@@ -257,7 +292,9 @@ void mesh_chunk(Chunk *chunk) {
 
           // Merge in one direction
           size_t width = 1;
-          while (x + width < size_u && mask[y * size_u + x + width] == current && face_positive_mask[y * size_u + x + width] == facePositive) {
+          while (x + width < size_u &&
+                 mask[y * size_u + x + width] == current &&
+                 face_positive_mask[y * size_u + x + width] == facePositive) {
             width++;
           }
 
@@ -266,12 +303,15 @@ void mesh_chunk(Chunk *chunk) {
           bool stop = false;
           while (y + height < size_v && !stop) {
             for (size_t k = 0; k < width; k++) {
-              if (mask[(y + height) * size_u + x + k] != current || face_positive_mask[(y + height) * size_u + x + k] != facePositive) {
+              if (mask[(y + height) * size_u + x + k] != current ||
+                  face_positive_mask[(y + height) * size_u + x + k] !=
+                      facePositive) {
                 stop = true;
                 break;
               }
             }
-            if (!stop) height++;
+            if (!stop)
+              height++;
           }
 
           int base[3] = {0, 0, 0}; // Quad position
@@ -285,10 +325,15 @@ void mesh_chunk(Chunk *chunk) {
           dv[v_axis] = (int)height;
 
           // Quad corners
-          float p[4][3] = {{base[0] + corner_x, base[1] + corner_y, base[2] + corner_z},
-                           {base[0] + du[0] + corner_x, base[1] + du[1] + corner_y, base[2] + du[2] + corner_z},
-                           {base[0] + dv[0] + corner_x, base[1] + dv[1] + corner_y, base[2] + dv[2] + corner_z},
-                           {base[0] + du[0] + dv[0] + corner_x, base[1] + du[1] + dv[1] + corner_y, base[2] + du[2] + dv[2] + corner_z}};
+          float p[4][3] = {
+              {base[0] + corner_x, base[1] + corner_y, base[2] + corner_z},
+              {base[0] + du[0] + corner_x, base[1] + du[1] + corner_y,
+               base[2] + du[2] + corner_z},
+              {base[0] + dv[0] + corner_x, base[1] + dv[1] + corner_y,
+               base[2] + dv[2] + corner_z},
+              {base[0] + du[0] + dv[0] + corner_x,
+               base[1] + du[1] + dv[1] + corner_y,
+               base[2] + du[2] + dv[2] + corner_z}};
           // Is the face pointing in the positive direction in its axis?
           bool face_positive = face_positive_mask[y * size_u + x];
 
@@ -333,7 +378,8 @@ void mesh_chunk(Chunk *chunk) {
 
           // Generate vertices for mesh
           bool flip_winding = (axis == 1); // flip Y-axis to correct orientation
-          emit_face(target, target_count, p, s, t, face_positive, flip_winding, side_index, current);
+          emit_face(target, target_count, p, s, t, face_positive, flip_winding,
+                    side_index, current);
 
           // Remove quad from mask
           for (size_t i = 0; i < height; i++) {

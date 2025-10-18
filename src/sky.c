@@ -10,8 +10,10 @@ size_t sky_vertex_counts[] = {2};
 GLenum sky_vertex_types[] = {GL_FLOAT};
 
 SkyRenderer *create_sky_renderer(void) {
-  nu_Program *program = nu_create_program(2, "shaders/sky.vert", "shaders/sky.frag");
-  nu_Mesh *mesh = nu_create_mesh(sky_vertex_num, sky_vertex_sizes, sky_vertex_counts, sky_vertex_types);
+  nu_Program *program =
+      nu_create_program(2, "shaders/sky.vert", "shaders/sky.frag");
+  nu_Mesh *mesh = nu_create_mesh(sky_vertex_num, sky_vertex_sizes,
+                                 sky_vertex_counts, sky_vertex_types);
   if (!program || !mesh) {
     fprintf(stderr, "(create_sky) Error creating sky.\n");
     fprintf(stderr, "program: %p, mesh: %p\n", (void *)program, (void *)mesh);
@@ -41,8 +43,10 @@ SkyRenderer *create_sky_renderer(void) {
   return renderer;
 }
 
-void render_sky(SkyRenderer *renderer, float screen_height, float pitch, float fov) {
-  if (!renderer) return;
+void render_sky(SkyRenderer *renderer, float screen_height, float pitch,
+                float fov) {
+  if (!renderer)
+    return;
   // Set OpenGL stuff
   glDisable(GL_CULL_FACE);
   glDisable(GL_DEPTH_TEST);

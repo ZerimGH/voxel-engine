@@ -4,8 +4,8 @@
 
 #include "nuGL.h"
 #include "player.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct {
   nu_Program *program;

@@ -15,7 +15,8 @@ typedef struct {
 
 // Function prototypes
 SkyRenderer *create_sky_renderer(void);
-void render_sky(SkyRenderer *renderer, float screen_height, float pitch, float fov);
+void render_sky(SkyRenderer *renderer, float screen_height, float pitch,
+                float fov);
 void destroy_sky_renderer(SkyRenderer **renderer);
 
 #endif

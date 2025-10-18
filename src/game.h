@@ -3,14 +3,14 @@
 #define GAME_H
 
 #include "camera.h"
-#include "player.h"
+#include "clouds.h"
+#include "crosshair.h"
 #include "defines.h"
 #include "nuGL.h"
+#include "player.h"
 #include "sky.h"
-#include "world.h"
 #include "ui_renderer.h"
-#include "crosshair.h"
-#include "clouds.h"
+#include "world.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,7 +19,7 @@ typedef struct {
   SkyRenderer *sky_renderer;
   Player *player;
   World *world;
-  UiRenderer *ui_renderer; 
+  UiRenderer *ui_renderer;
   Crosshair *crosshair;
   Clouds *clouds;
   float this_time, last_time;

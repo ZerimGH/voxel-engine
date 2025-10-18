@@ -11,28 +11,27 @@ size_t quad_counts[] = {2, 2};
 GLenum quad_types[] = {GL_FLOAT, GL_FLOAT};
 
 UiRenderer *create_ui_renderer(void) {
-  nu_Mesh *mesh = nu_create_mesh(quad_num_components, quad_sizes, quad_counts, quad_types); 
-  if(!mesh) {
-    fprintf(stderr, "(create_ui_renderer): Couldn't create ui renderer, nu_create_mesh() returned NULL.\n");
+  nu_Mesh *mesh =
+      nu_create_mesh(quad_num_components, quad_sizes, quad_counts, quad_types);
+  if (!mesh) {
+    fprintf(stderr, "(create_ui_renderer): Couldn't create ui renderer, "
+                    "nu_create_mesh() returned NULL.\n");
     return NULL;
   }
 
-  QuadVertex quad[6] = {
-    {{-1, -1}, {0, 0}},
-    {{1, -1}, {1, 0}},
-    {{-1, 1}, {0, 1}},
-    {{1, 1}, {1, 1}},
-    {{1, -1}, {1, 0}},
-    {{-1, 1}, {0, 1}}
-  };
+  QuadVertex quad[6] = {{{-1, -1}, {0, 0}}, {{1, -1}, {1, 0}},
+                        {{-1, 1}, {0, 1}},  {{1, 1}, {1, 1}},
+                        {{1, -1}, {1, 0}},  {{-1, 1}, {0, 1}}};
 
   nu_mesh_add_bytes(mesh, sizeof(quad), quad);
   nu_send_mesh(mesh);
   nu_free_mesh(mesh);
 
-  nu_Program *program = nu_create_program(2, "shaders/ui.vert", "shaders/ui.frag");
-  if(!program) {
-    fprintf(stderr, "(create_ui_renderer): Couldn't create ui renderer, nu_create_program() returned NULL.\n");
+  nu_Program *program =
+      nu_create_program(2, "shaders/ui.vert", "shaders/ui.frag");
+  if (!program) {
+    fprintf(stderr, "(create_ui_renderer): Couldn't create ui renderer, "
+                    "nu_create_program() returned NULL.\n");
     nu_destroy_mesh(&mesh);
     return NULL;
   }
@@ -43,8 +42,10 @@ UiRenderer *create_ui_renderer(void) {
   nu_set_uniform(program, "uTexture", &unit);
 
   UiRenderer *ui = calloc(1, sizeof(UiRenderer));
-  if(!ui) {
-    fprintf(stderr, "(create_ui_renderer): Couldn't create ui renderer, calloc failed.\n");
+  if (!ui) {
+    fprintf(
+        stderr,
+        "(create_ui_renderer): Couldn't create ui renderer, calloc failed.\n");
     nu_destroy_mesh(&mesh);
     nu_destroy_program(&program);
     return NULL;
@@ -54,15 +55,18 @@ UiRenderer *create_ui_renderer(void) {
   return ui;
 }
 void destroy_ui_renderer(UiRenderer **ui) {
-  if(!ui || !(*ui)) return; 
+  if (!ui || !(*ui))
+    return;
   nu_destroy_mesh(&(*ui)->quad_mesh);
   nu_destroy_program(&(*ui)->program);
   free(*ui);
   *ui = NULL;
 }
 
-static inline float map(float n, float n_min, float n_max, float new_min, float new_max) {
-  if(n_min == n_max) return new_min; // Avoid div by 0
+static inline float map(float n, float n_min, float n_max, float new_min,
+                        float new_max) {
+  if (n_min == n_max)
+    return new_min; // Avoid div by 0
   n -= n_min;
   n /= (n_max - n_min);
   n *= (new_max - new_min);
@@ -70,8 +74,10 @@ static inline float map(float n, float n_min, float n_max, float new_min, float 
   return n;
 }
 
-void ui_render_quad(UiRenderer *ui, float x, float y, float w, float h, float screen_width, float screen_height) {
-  if(!ui) return;
+void ui_render_quad(UiRenderer *ui, float x, float y, float w, float h,
+                    float screen_width, float screen_height) {
+  if (!ui)
+    return;
   // Convert coordinates to -1 -> 1
   float x_frac = x / screen_width;
   float y_frac = y / screen_height;
@@ -96,4 +102,3 @@ void ui_render_quad(UiRenderer *ui, float x, float y, float w, float h, float sc
   nu_render_mesh(ui->quad_mesh);
   glDepthMask(GL_TRUE);
 }
-
