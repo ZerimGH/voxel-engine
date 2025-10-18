@@ -30,11 +30,13 @@ typedef struct {
   bool is_sprinting;
   bool is_jumping;
   bool keep_sprint;
+  bool is_zooming;
   float jump_time;
 
   // Interpolation for animations
   float sprint_interp;
   float crouch_interp;
+  float zoom_interp;
 
   float dt; // Deltatime, should be set each frame
 } Player;
@@ -54,6 +56,7 @@ void player_left(Player *player);
 void player_set_jumping(Player *player, bool state);
 void player_set_crouching(Player *player, bool state);
 void player_set_sprinting(Player *player, bool state);
+void player_set_zooming(Player *player, bool state);
 // Break / place blocks
 bool player_break(Player *player, World *world);
 bool player_place(Player *player, World *world);

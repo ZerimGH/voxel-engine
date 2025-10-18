@@ -130,6 +130,7 @@ void update_game(Game *game) {
   player_set_jumping(game->player, nu_get_key_state(game->window, GLFW_KEY_SPACE));
   player_set_crouching(game->player, nu_get_key_state(game->window, GLFW_KEY_LEFT_SHIFT));
   player_set_sprinting(game->player, nu_get_key_pressed(game->window, GLFW_KEY_LEFT_CONTROL) || (nu_get_key_pressed(game->window, GLFW_KEY_W) && nu_get_key_state(game->window, GLFW_KEY_LEFT_CONTROL)));
+  player_set_zooming(game->player, nu_get_key_state(game->window, GLFW_KEY_F));
   player_rotate(game->player, nu_get_delta_mouse_x(game->window), -nu_get_delta_mouse_y(game->window));
   player_update(game->player, game->world);
   if (game->window->mouse_left && !game->window->last_mouse_left) player_break(game->player, game->world);

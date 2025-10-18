@@ -52,6 +52,7 @@ Player *create_player(void) {
   player->last_grounded = false;
   player->is_crouching = false;
   player->is_sprinting = false;
+  player->is_zooming = false;
   player->is_jumping = false;
   player->keep_sprint = false;
   player->jump_time = 0.f;
@@ -85,7 +86,9 @@ static void update_camera_pos(Player *player) {
       player->position[1] - player->hitbox_dims[1] / 2.f + PLAYER_EYE_HEIGHT -
       (PLAYER_EYE_HEIGHT - PLAYER_EYE_HEIGHT_CROUCHING) * player->crouch_interp;
   player->camera->position[2] = player->position[2];
+  player->camera->fov = WALKING_FOV;
   if(player->sprint_interp > 0.05f) player->camera->fov = WALKING_FOV + (SPRINTING_FOV - WALKING_FOV) * player->sprint_interp;
+  player->camera->fov /= (player->zoom_interp * 3.f) + 1.f;
 }
 
 // Move the player forwards
@@ -134,6 +137,11 @@ void player_set_crouching(Player *player, bool state) {
   if(!player) return;
   player->is_crouching = state;
   if(state) player->is_sprinting = false; // Can't sprint and crouch
+}
+
+void player_set_zooming(Player *player, bool state) {
+  if(!player) return;
+  player->is_zooming = state;
 }
 
 void player_set_jumping(Player *player, bool state) {
@@ -356,6 +364,13 @@ void player_update(Player *player, World *world) {
   } else {
     player->sprint_interp -= player->dt * 7.5f;
     player->sprint_interp = MAX(player->sprint_interp, 0.f);
+  }
+  if (player->is_zooming) {
+    player->zoom_interp += player->dt * 2.5f;
+    player->zoom_interp = MIN(player->zoom_interp, 1.f);
+  } else {
+    player->zoom_interp -= player->dt * 4.5f;
+    player->zoom_interp = MAX(player->zoom_interp, 0.f);
   }
 
   // If the player shouldn't keep sprinting, unsprint
