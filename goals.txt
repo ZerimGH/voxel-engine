@@ -5,16 +5,16 @@ LONG TERM (im putting these off):
   - Entities, player model, animations
 
 SHORT TERM (i will do these soon):
-  - Try circular buffer for queue
   - Player inventory / hotbar + ui
+  - Try circular buffer for queue
   - Fix greedy mesher (Weird bug where some pixels of the background show
     through the mesh)
-  - Cloud rendering, fog
   - Better terrain generation (biomes, trees, ores)
-
-RIGHT NOW (i am working on this):
   - Lower memory usage (represent block types as uint8_t, optimise mesh
     lifetime, maybe even some vertex packing)
+
+RIGHT NOW (i am working on this):
+  - Cloud rendering, fog
 
 DONE: 
   - Render cube
