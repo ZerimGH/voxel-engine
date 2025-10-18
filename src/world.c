@@ -5,6 +5,7 @@ static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
 bool world_update_queue(World *world);
 
+/*
 static inline void world_lock_hashmap(World *world) {
   if(!world) return;
 #ifdef MULTITHREAD
@@ -16,6 +17,21 @@ static inline void world_unlock_hashmap(World *world) {
   if(!world) return;
 #ifdef MULTITHREAD
   pthread_mutex_unlock(&world->hashmap_mutex);
+#endif
+}
+*/
+
+static inline void world_lock_bucket(World *world, size_t bucket) {
+  if(!world || bucket >= HASHMAP_SIZE) return;
+#ifdef MULTITHREAD
+  pthread_mutex_lock(&world->map.bucket_mutexes[bucket]);
+#endif
+}
+
+static inline void world_unlock_bucket(World *world, size_t bucket) {
+  if(!world || bucket >= HASHMAP_SIZE) return;
+#ifdef MULTITHREAD
+  pthread_mutex_unlock(&world->map.bucket_mutexes[bucket]);
 #endif
 }
 
@@ -41,6 +57,8 @@ void *thread_routine(void *arg) {
     if (!world_update_queue(world)) {
       usleep(1000);
     }
+    usleep(10); // Without this, theres a weird slowdown when breaking or
+                // placing blocks.
   }
   return NULL;
 }
@@ -81,7 +99,10 @@ World *create_world() {
 
 #ifdef MULTITHREAD
   pthread_create(&world->chunk_thread, NULL, thread_routine, (void *)world);
-  pthread_mutex_init(&world->hashmap_mutex, NULL);
+  //pthread_mutex_init(&world->hashmap_mutex, NULL);
+  for(size_t i = 0; i < HASHMAP_SIZE; i++) {
+    pthread_mutex_init(&world->map.bucket_mutexes[i], NULL);
+  }
   pthread_mutex_init(&world->queue_mutex, NULL);
   world->kill = false;
 #endif
@@ -109,7 +130,10 @@ void destroy_world(World **world) {
   // Stop thread on world destroyed 
   (*world)->kill = true;
   pthread_join((*world)->chunk_thread, NULL);
-  pthread_mutex_destroy(&(*world)->hashmap_mutex);
+  // pthread_mutex_destroy(&(*world)->hashmap_mutex);
+  for(size_t i = 0; i < HASHMAP_SIZE; i++) {
+    pthread_mutex_destroy(&(*world)->map.bucket_mutexes[i]);
+  }
   pthread_mutex_destroy(&(*world)->queue_mutex);
   #endif
 
@@ -237,9 +261,8 @@ void render_world(World *world, mat4 vp) {
   nu_use_program(world->program);
   nu_set_uniform(world->program, "uMVP", &vp[0][0]);
 
-  world_lock_hashmap(world);
-
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
+    world_lock_bucket(world, i);
     ChunkNode *node = world->map.buckets[i];
     while (node) {
       ChunkNode *next = node->next;
@@ -259,9 +282,8 @@ void render_world(World *world, mat4 vp) {
       }
       node = next;
     }
+    world_unlock_bucket(world, i);
   }
-
-  world_unlock_hashmap(world);
 }
 
 static inline uint32_t hash_chunk_coords(int x, int y, int z) {
@@ -281,23 +303,23 @@ static uint32_t get_bucket(int x, int y, int z) {
 static ChunkNode *hashmap_get(World *world, int x, int y, int z) {
   if (!world) return NULL;
   uint32_t bucket = get_bucket(x, y, z);
-  world_lock_hashmap(world);
+  world_lock_bucket(world, bucket);
   ChunkNode *node = world->map.buckets[bucket];
   while (node) {
     if (node->x == x && node->y == y && node->z == z) {
-      world_unlock_hashmap(world);
+      world_unlock_bucket(world, bucket);
       return node;
     }
     node = node->next;
   }
-  world_unlock_hashmap(world);
+  world_unlock_bucket(world, bucket);
   return NULL;
 }
 
 static void hashmap_remove(World *world, int x, int y, int z) {
   if (!world) return;
   uint32_t bucket = get_bucket(x, y, z);
-  world_lock_hashmap(world);
+  world_lock_bucket(world, bucket);
   ChunkNode *prev = NULL, *node = world->map.buckets[bucket];
   while (node) {
     if (node->x == x && node->y == y && node->z == z) {
@@ -307,14 +329,14 @@ static void hashmap_remove(World *world, int x, int y, int z) {
         world->map.buckets[bucket] = node->next;
 
       destroy_chunk(&node->chunk);
+      world_unlock_bucket(world, bucket);
       free(node);
-      world_unlock_hashmap(world);
       return;
     }
     prev = node;
     node = node->next;
   }
-  world_unlock_hashmap(world);
+  world_unlock_bucket(world, bucket);
 }
 
 static void hashmap_append(World *world, Chunk *chunk) {
@@ -340,7 +362,7 @@ static void hashmap_append(World *world, Chunk *chunk) {
 
   uint32_t bucket = get_bucket(x, y, z);
 
-  world_lock_hashmap(world);
+  world_lock_bucket(world, bucket);
 
   ChunkNode *prev = world->map.buckets[bucket];
   ChunkNode *node = world->map.buckets[bucket];
@@ -354,7 +376,7 @@ static void hashmap_append(World *world, Chunk *chunk) {
   } else {
     world->map.buckets[bucket] = new_node;
   }
-  world_unlock_hashmap(world);
+  world_unlock_bucket(world, bucket);
 }
 
 // Create chunks that are in render distance, if not already loaded 
@@ -383,9 +405,9 @@ static void world_load_chunks(World *world) {
 static void world_unload_chunks(World *world) {
   if (!world) return;
   size_t count = 0;
-  world_lock_hashmap(world);
 
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
+    world_lock_bucket(world, i);
     ChunkNode *node = world->map.buckets[i];
     ChunkNode *prev = NULL;
     while (node) {
@@ -411,8 +433,8 @@ static void world_unload_chunks(World *world) {
       prev = node;
       node = node->next;
     }
+    world_unlock_bucket(world, i);
   }
-  world_unlock_hashmap(world);
 }
 
 // Update the position that chunks load around

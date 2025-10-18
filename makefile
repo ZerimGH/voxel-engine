@@ -31,6 +31,8 @@ run: linux
 # https://glew.sourceforge.net/index.html
 # for multithreading, you also need pthreads-win32
 # https://github.com/GerHobbelt/pthread-win32
+# you also need to put the dlls in the build directory to run, unless you
+# figure out static compilation
 
 windows:
 	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET).exe \

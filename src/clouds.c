@@ -81,9 +81,11 @@ void destroy_clouds(Clouds **clouds) {
 }
 void render_clouds(Clouds *clouds, Player *player, float time) {
   if(!clouds || !player) return;
+  /*
   float off[3] = {player->pos[0], CLOUDS_HEIGHT, player->pos[2]};
   nu_set_uniform(clouds->program, "uOff", off);
   nu_bind_texture(clouds->texture, 0);
-  // nu_
+  nu_
+  */
   // TODO
 } 

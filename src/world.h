@@ -30,6 +30,7 @@ typedef struct ChunkNode {
 
 typedef struct {
   ChunkNode *buckets[HASHMAP_SIZE];
+  pthread_mutex_t bucket_mutexes[HASHMAP_SIZE];
 } ChunkMap;
 
 typedef struct {
@@ -51,7 +52,7 @@ typedef struct {
   Queue queue;  // Queue of chunk coordinates to be generated and meshed
 #ifdef MULTITHREAD
   pthread_t chunk_thread; // The thread that will generate and mesh chunks
-  pthread_mutex_t hashmap_mutex; // Mutex protecting hashmap lookups / insertions
+  // pthread_mutex_t hashmap_mutex; // Mutex protecting hashmap lookups / insertions
   pthread_mutex_t queue_mutex; // Mutex protecting pushing and popping from the queue
   volatile bool kill; // Flag to kill the thread
 #endif
