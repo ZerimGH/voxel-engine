@@ -6,10 +6,13 @@ layout(location = 2) in int aSideIndex;
 layout(location = 3) in int aBlockType;
 
 uniform mat4 uMVP; 
+uniform vec3 uPlayerPos;
+uniform float uRenderDistance;
 
 out vec2 fTex;
 out float brightness;
 flat out int texture_index;
+out float fFogFactor;
 
 void main() {
   gl_Position = uMVP * vec4(aPosition, 1.0);
@@ -29,4 +32,9 @@ void main() {
   else texture_offset = 2;
   brightness = direction_light * base_brightness;
   texture_index = (aBlockType - 1) * 3 + texture_offset; // -1 for air
+  float fog_near = uRenderDistance / 2.f;
+  float fog_far = uRenderDistance;
+  float dist = distance(aPosition, uPlayerPos);
+  dist = clamp(dist, fog_near, fog_far);
+  fFogFactor = (dist - fog_near) / (fog_far - fog_near); 
 }

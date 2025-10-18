@@ -1,4 +1,5 @@
 #include "world.h"
+#include "player.h"
 
 static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
@@ -55,6 +56,8 @@ World *create_world() {
     return NULL;
   }
   nu_register_uniform(program, "uMVP", GL_FLOAT_MAT4);
+  nu_register_uniform(program, "uPlayerPos", GL_FLOAT_VEC3);
+  nu_register_uniform(program, "uRenderDistance", GL_FLOAT);
 
   // Load the texture array for blocks
   nu_Texture *block_textures = nu_load_texture_array(NUM_BLOCK_TEXTURES, BLOCK_TEXTURES);
@@ -229,8 +232,13 @@ bool world_update_queue(World *world) {
 }
 
 // Render every loaded chunk, and send meshed chunks to GPU 
-void render_world(World *world, mat4 vp) {
-  if (!world) return;
+void render_world(World *world, void *p, float aspect) {
+  if (!world || !p) return;
+
+  Player *player = (Player *)p;
+  nu_set_uniform(world->program, "uPlayerPos", player->position);
+  float render_dist = world->rdx * CHUNK_WIDTH;
+  nu_set_uniform(world->program, "uRenderDistance", &render_dist);
 
   // Set OpenGL parameters
   glEnable(GL_DEPTH_TEST);
@@ -241,6 +249,8 @@ void render_world(World *world, mat4 vp) {
   #endif
 
   // Use and upload VP matrix to program
+  mat4 vp;
+  camera_calculate_vp_matrix(player->camera, vp, aspect);
   nu_use_program(world->program);
   nu_set_uniform(world->program, "uMVP", &vp[0][0]);
 

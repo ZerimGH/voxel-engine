@@ -69,8 +69,8 @@ typedef struct {
 World *create_world();
 // Destroy all of a world's resources, and null the pointer
 void destroy_world(World **world);
-// Render a world given a view-projection matrix
-void render_world(World *world, mat4 vp);
+// Render a world given a player and an aspect
+void render_world(World *world, void *player, float aspect);
 // Set the point of the world that chunks load around
 void world_update_centre(World *world, int nx, int ny, int nz);
 // Generate and mesh one chunk from the queue, returns true on success, and

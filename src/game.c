@@ -167,7 +167,7 @@ void render_game(Game *game) {
   nu_start_frame(game->window);
 
   render_sky(game->sky_renderer, (float)game->window->height, game->player->camera->pitch, game->player->camera->fov);
-  render_world(game->world, vp);
+  render_world(game->world, game->player, aspect);
   render_clouds(game->clouds, game->player, game->this_time, aspect); 
   render_crosshair(game->crosshair, game->ui_renderer, (float)game->window->width, (float)game->window->height);
 
