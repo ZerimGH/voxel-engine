@@ -62,20 +62,6 @@ void unlock_chunk(Chunk *chunk) {
 #endif
 }
 
-void print_chunk(Chunk *chunk) {
-  if (!chunk) {
-    printf("Chunk: (null)\n");
-    return;
-  }
-  printf("Chunk: %p {\n", (void *)chunk);
-  printf("  coords: (%d, %d, %d)\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
-  printf("  blocks: %p\n", (void *)chunk->blocks);
-  printf("  num_blocks: %zu\n", chunk->num_blocks);
-  nu_print_mesh(chunk->mesh, 2);
-  // printf("  meshed: %d\n", chunk->meshed);
-  printf("}\n");
-}
-
 void destroy_chunk(Chunk **chunk) {
   if (!chunk || !(*chunk)) return;
   lock_chunk(*chunk);

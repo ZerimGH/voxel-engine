@@ -1,6 +1,8 @@
 #include "camera.h"
 #include "cglm/cglm.h"
 
+#define PI 3.14159265f
+
 Camera *create_camera(float near, float far, float fov) {
   Camera *camera = calloc(1, sizeof(Camera));
   if (!camera) {
@@ -9,7 +11,7 @@ Camera *create_camera(float near, float far, float fov) {
   }
   camera->near = near;
   camera->far = far;
-  camera->yaw = -M_PI / 2;
+  camera->yaw = -PI / 2;
   camera->pitch = 0.0f;
   camera->fov = fov;
   return camera;
@@ -63,11 +65,11 @@ void camera_rotate(Camera *camera, float delta_yaw, float delta_pitch) {
   camera->yaw += delta_yaw;
   camera->pitch += delta_pitch;
   // clamp camera pitch value
-  if (camera->pitch > 0.99f * M_PI / 2.f) camera->pitch = 0.99f * M_PI / 2.f;
-  if (camera->pitch < 0.99f * -M_PI / 2.f) camera->pitch = 0.99f * -M_PI / 2.f;
+  if (camera->pitch > 0.99f * PI / 2.f) camera->pitch = 0.99f * PI / 2.f;
+  if (camera->pitch < 0.99f * -PI / 2.f) camera->pitch = 0.99f * -PI / 2.f;
   // make camera yaw value wrap around
-  while (camera->yaw < 0) camera->yaw += M_PI * 2;
-  while (camera->yaw > M_PI * 2) camera->yaw -= M_PI * 2;
+  while (camera->yaw < 0) camera->yaw += PI * 2;
+  while (camera->yaw > PI * 2) camera->yaw -= PI * 2;
 }
 
 static void camera_move_forward(Camera *camera, float step_size) {
