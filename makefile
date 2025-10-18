@@ -17,7 +17,7 @@ CFLAGS = -Wall -I. -I$(NU_GL_DIR) -Ilibs
 
 linux:
 	mkdir -p $(BUILD_DIR)
-	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -lGL -lglfw -lGLEW -lm -O3 -pthread
+	$(CC) $(SRCS) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) -pedantic -lGL -lglfw -lGLEW -lm -pthread
 
 linux-debug:
 	mkdir -p $(BUILD_DIR)

@@ -14,7 +14,7 @@ SkyRenderer *create_sky_renderer(void) {
   nu_Mesh *mesh = nu_create_mesh(sky_vertex_num, sky_vertex_sizes, sky_vertex_counts, sky_vertex_types);
   if (!program || !mesh) {
     fprintf(stderr, "(create_sky) Error creating sky.\n");
-    fprintf(stderr, "program: %p, mesh: %p\n", program, mesh);
+    fprintf(stderr, "program: %p, mesh: %p\n", (void *)program, (void *)mesh);
     nu_destroy_program(&program);
     nu_destroy_mesh(&mesh);
   }

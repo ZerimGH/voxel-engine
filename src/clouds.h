@@ -15,6 +15,6 @@ typedef struct {
 
 Clouds *create_clouds(void);
 void destroy_clouds(Clouds **clouds);
-void render_clouds(Clouds *clouds, Player *player, float time); 
+void render_clouds(Clouds *clouds, Player *player, float time, float aspect);
 
 #endif

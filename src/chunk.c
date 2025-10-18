@@ -63,10 +63,13 @@ void unlock_chunk(Chunk *chunk) {
 }
 
 void print_chunk(Chunk *chunk) {
-  if (!chunk) return (void)printf("Chunk: (null)\n");
-  printf("Chunk: %p {\n", chunk);
+  if (!chunk) {
+    printf("Chunk: (null)\n");
+    return;
+  }
+  printf("Chunk: %p {\n", (void *)chunk);
   printf("  coords: (%d, %d, %d)\n", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
-  printf("  blocks: %p\n", chunk->blocks);
+  printf("  blocks: %p\n", (void *)chunk->blocks);
   printf("  num_blocks: %zu\n", chunk->num_blocks);
   nu_print_mesh(chunk->mesh, 2);
   // printf("  meshed: %d\n", chunk->meshed);

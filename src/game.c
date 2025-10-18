@@ -14,6 +14,7 @@ Game *create_game(void) {
   Game *game = NULL;
   UiRenderer *ui_renderer = NULL;
   Crosshair *crosshair = NULL;
+  Clouds *clouds = NULL;
 
   // Create window
   window = nu_create_window(WIN_WIDTH, WIN_HEIGHT, NULL, FULLSCREEN);
@@ -61,6 +62,12 @@ Game *create_game(void) {
     goto failure;
   }
 
+  clouds = create_clouds();
+  if(!clouds) {
+    sprintf(err_msg, "(create_game): Error creating game: create_clouds() returned NULL\n");
+    goto failure;
+  }
+
   // Create game
   game = calloc(1, sizeof(Game));
   if (!game) {
@@ -78,6 +85,7 @@ failure:
   destroy_world(&world);
   destroy_ui_renderer(&ui_renderer);
   destroy_crosshair(&crosshair);
+  destroy_clouds(&clouds);
   if (game) free(game);
   return NULL;
 
@@ -89,6 +97,7 @@ success:
   game->world = world;
   game->ui_renderer = ui_renderer;
   game->crosshair = crosshair;
+  game->clouds = clouds;
   game->last_time = 0.f;
   game->this_time = glfwGetTime();
   return game;
@@ -101,6 +110,7 @@ void destroy_game(Game **game) {
   destroy_ui_renderer(&(*game)->ui_renderer);
   destroy_crosshair(&(*game)->crosshair);
   destroy_player(&(*game)->player);
+  destroy_clouds(&(*game)->clouds);
   destroy_world(&(*game)->world);
   free(*game);
   *game = NULL;
@@ -158,6 +168,7 @@ void render_game(Game *game) {
 
   render_sky(game->sky_renderer, (float)game->window->height, game->player->camera->pitch, game->player->camera->fov);
   render_world(game->world, vp);
+  render_clouds(game->clouds, game->player, game->this_time, aspect); 
   render_crosshair(game->crosshair, game->ui_renderer, (float)game->window->width, (float)game->window->height);
 
   nu_end_frame(game->window);

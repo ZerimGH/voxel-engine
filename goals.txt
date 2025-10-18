@@ -14,7 +14,7 @@ SHORT TERM (i will do these soon):
     lifetime, maybe even some vertex packing)
 
 RIGHT NOW (i am working on this):
-  - Cloud rendering, fog
+  - Fog
 
 DONE: 
   - Render cube

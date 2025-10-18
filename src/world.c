@@ -1,25 +1,8 @@
 #include "world.h"
 
-static void world_load_chunk(World *world, int x, int y, int z);
 static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
 bool world_update_queue(World *world);
-
-/*
-static inline void world_lock_hashmap(World *world) {
-  if(!world) return;
-#ifdef MULTITHREAD
-  pthread_mutex_lock(&world->hashmap_mutex);
-#endif
-}
-
-static inline void world_unlock_hashmap(World *world) {
-  if(!world) return;
-#ifdef MULTITHREAD
-  pthread_mutex_unlock(&world->hashmap_mutex);
-#endif
-}
-*/
 
 static inline void world_lock_bucket(World *world, size_t bucket) {
   if(!world || bucket >= HASHMAP_SIZE) return;
@@ -316,6 +299,7 @@ static ChunkNode *hashmap_get(World *world, int x, int y, int z) {
   return NULL;
 }
 
+/*
 static void hashmap_remove(World *world, int x, int y, int z) {
   if (!world) return;
   uint32_t bucket = get_bucket(x, y, z);
@@ -338,6 +322,7 @@ static void hashmap_remove(World *world, int x, int y, int z) {
   }
   world_unlock_bucket(world, bucket);
 }
+*/
 
 static void hashmap_append(World *world, Chunk *chunk) {
   if (!world || !chunk || hashmap_get(world, chunk->coords[0], chunk->coords[1], chunk->coords[2])) {
