@@ -160,7 +160,7 @@ static void game_update_time(Game *game) {
   // FPS counter
   static float dt_acc = 0.f;
   static size_t frames_passed = 0;
-  if ((int)floorf(game->this_time * 5) - (int)floorf(game->last_time * 5) != 0) {
+  if ((int)floorf(game->this_time * 10) - (int)floorf(game->last_time * 10) != 0) {
     game->fps = (size_t)((float)frames_passed / dt_acc);
   }
 
