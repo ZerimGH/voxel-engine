@@ -1,6 +1,23 @@
-#include "noise.h"
+#define FNL_IMPL
+#include "FastNoiseLite.h"
 
 void generate_chunk(Chunk *chunk, uint32_t seed) {
+  static fnl_state noise;
+  static int noise_init = 0;
+
+  if(!noise_init) {
+    noise_init = 1;
+    noise = fnlCreateState();
+
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.seed = 1337;
+    noise.frequency = 0.005f;
+    noise.fractal_type = FNL_FRACTAL_FBM;
+    noise.octaves = 5;
+    noise.lacunarity = 1.7f;
+    noise.gain = 0.4f;
+  }
+
   if (!chunk)
     return;
   ChunkState state = chunk->state;
@@ -18,25 +35,42 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
     return;
   }
 
+  static float heightmap[CHUNK_AREA];
+  static float cavemap[CHUNK_VOLUME];
+
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
   int ccz = chunk->coords[2] * CHUNK_LENGTH;
-  for (size_t x = 0; x < CHUNK_WIDTH; x++) {
+
+  for(size_t x = 0; x < CHUNK_WIDTH; x++) {
     int gx = ccx + x;
-    for (size_t z = 0; z < CHUNK_LENGTH; z++) {
+    for(size_t z = 0; z < CHUNK_LENGTH; z++) {
       int gz = ccz + z;
-      float noise_val = octave_noise_2d(gx, gz, 4, 0.35, 1.6, 128, seed);
-      float sand_val = octave_noise_2d(gx, gz, 4, 0.35, 1.6, 128, seed + 1);
-      int terrain_height = noise_val * 50 + 50;
+      float height_val = fnlGetNoise2D(&noise, gx, gz);
+      height_val = height_val / 2.f + 0.5f;
+      height_val = height_val * 50;
+      heightmap[CHUNK_INDEX(x, 0, z)] = height_val;
+      for(size_t y = 0; y < CHUNK_HEIGHT; y++) {
+        int gy = ccy + y;
+        float cave_val = fnlGetNoise3D(&noise, gx, gy, gz);
+        cavemap[CHUNK_INDEX(x, y, z)] = cave_val;
+      }
+    }
+  }
+
+  for (size_t x = 0; x < CHUNK_WIDTH; x++) {
+    for (size_t z = 0; z < CHUNK_LENGTH; z++) {
+      float height_val = heightmap[CHUNK_INDEX(x, 0, z)];
+      if(ccy > height_val) continue;
       for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
         int gy = ccy + y;
         BlockType block = BlockAir;
-        if (gy <= terrain_height) {
-          int dist_from_surface = terrain_height - gy;
+        if (gy <= height_val) {
+          int dist_from_surface = height_val - gy;
           if (dist_from_surface == 0) {
-            block = sand_val > 0 ? BlockGrass : BlockSand;
+            block = BlockGrass;
           } else if (dist_from_surface <= 5) {
-            block = sand_val > 0 ? BlockDirt : BlockSand;
+            block = BlockDirt;
           } else {
             block = BlockStone;
           }

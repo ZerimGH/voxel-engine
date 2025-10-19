@@ -246,10 +246,10 @@ bool world_update_queue(World *world) {
     return false; // This should never happen
 
   // Mesh and generate the chunk
-  lock_chunk(chunk);
+  // lock_chunk(chunk);
   generate_chunk(chunk, world->seed);
   mesh_chunk(chunk);
-  unlock_chunk(chunk);
+  // unlock_chunk(chunk);
   return true;
 }
 
@@ -284,7 +284,7 @@ void render_world(World *world, void *p, float aspect) {
       ChunkNode *next = node->next;
       Chunk *chunk = node->chunk;
       if (chunk && chunk->mesh) {
-        lock_chunk(chunk);
+        // lock_chunk(chunk);
         ChunkState state = chunk->state;
         // If the chunk needs to be sent, send it
         if (state == STATE_NEEDS_SEND) {
@@ -294,7 +294,7 @@ void render_world(World *world, void *p, float aspect) {
         }
         // Render
         nu_render_mesh(chunk->mesh);
-        unlock_chunk(chunk);
+        // unlock_chunk(chunk);
       }
       node = next;
     }
@@ -486,9 +486,9 @@ Block *world_get_block(World *world, int x, int y, int z) {
   size_t ccx = x - (cx * CHUNK_WIDTH);
   size_t ccy = y - (cy * CHUNK_HEIGHT);
   size_t ccz = z - (cz * CHUNK_LENGTH);
-  lock_chunk(chunk);
+  // lock_chunk(chunk);
   Block *block = chunk_get_block(chunk, ccx, ccy, ccz);
-  unlock_chunk(chunk);
+  // unlock_chunk(chunk);
   return block;
 }
 
@@ -507,9 +507,9 @@ void world_set_block(World *world, BlockType block, int x, int y, int z) {
   size_t ccx = x - (cx * CHUNK_WIDTH);
   size_t ccy = y - (cy * CHUNK_HEIGHT);
   size_t ccz = z - (cz * CHUNK_LENGTH);
-  lock_chunk(chunk);
+  // lock_chunk(chunk);
   bool success = chunk_set_block(chunk, block, ccx, ccy, ccz);
-  unlock_chunk(chunk);
+  // unlock_chunk(chunk);
   if (success) {
     chunk->state = STATE_NEEDS_MESH;
     world_queue_chunk(world, cx, cy, cz);

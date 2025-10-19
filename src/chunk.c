@@ -72,14 +72,14 @@ void unlock_chunk(Chunk *chunk) {
 void destroy_chunk(Chunk **chunk) {
   if (!chunk || !(*chunk))
     return;
-  lock_chunk(*chunk);
+  // lock_chunk(*chunk);
   if ((*chunk)->mesh)
     nu_destroy_mesh(&(*chunk)->mesh);
   if ((*chunk)->blocks) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
   }
-  unlock_chunk(*chunk);
+  // unlock_chunk(*chunk);
 #ifdef MULTITHREAD
   pthread_mutex_destroy(&(*chunk)->chunk_mutex);
 #endif

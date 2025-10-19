@@ -18,7 +18,7 @@
 #include <unistd.h>
 #endif
 
-#define HASHMAP_SIZE 4096
+#define HASHMAP_SIZE 4096 
 
 #define RENDER_DISTANCE 8
 
