@@ -203,7 +203,7 @@ void mesh_chunk(Chunk *chunk) {
           }
 
           // Fix texcoords for some faces
-          if (((u_axis != 1 && face_positive) || (v_axis != 1 && !face_positive))) {
+          if (!(((u_axis != 1 && face_positive) || (v_axis != 1 && !face_positive)))) {
             for (int i = 0; i < 4; i++) {
               s[i] = (float)width - s[i];
             }
