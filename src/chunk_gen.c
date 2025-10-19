@@ -1,24 +1,8 @@
 #define FNL_IMPL
 #include "FastNoiseLite.h"
+#include "noise.h"
 
 void generate_chunk(Chunk *chunk, uint32_t seed) {
-  static fnl_state noise;
-  static int noise_init = 0;
-
-  if (!noise_init) {
-    noise_init = 1;
-    noise = fnlCreateState();
-
-    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    noise.frequency = 0.005f;
-    noise.fractal_type = FNL_FRACTAL_FBM;
-    noise.octaves = 3;
-    noise.lacunarity = 2.3f;
-    noise.gain = 0.4f;
-  }
-
-  noise.seed = seed;
-
   if (!chunk)
     return;
   ChunkState state = chunk->state;
@@ -47,11 +31,11 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
     int gx = ccx + x;
     for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       int gz = ccz + z;
-      float height_val = fnlGetNoise2D(&noise, gx, gz);
+      float height_val = octave_noise_2d(gx, gz, 3, 0.5, 2.f, 256, seed);
       height_val = height_val / 2.f + 0.5f;
       height_val = height_val * 50;
       heightmap[CHUNK_INDEX(x, 0, z)] = height_val;
-      float sand_val = fnlGetNoise2D(&noise, gx + 1000, gz + 1000);
+      float sand_val = octave_noise_2d(gx, gz, 1, 1.f, 1.f, 256, seed + 10);
       sandmap[CHUNK_INDEX(x, 0, z)] = sand_val;
     }
   }

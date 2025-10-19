@@ -132,6 +132,7 @@ success:
   game->this_time = glfwGetTime();
   game->delta_time = 0.f;
   game->frame_count = 0;
+  game->debug = false;
   return game;
 }
 
@@ -151,7 +152,7 @@ void destroy_game(Game **game) {
 }
 
 static void game_update_time(Game *game) {
-  if(!game)
+  if (!game)
     return;
   game->last_time = game->this_time;
   game->this_time = glfwGetTime();
@@ -160,7 +161,8 @@ static void game_update_time(Game *game) {
   // FPS counter
   static float dt_acc = 0.f;
   static size_t frames_passed = 0;
-  if ((int)floorf(game->this_time * 10) - (int)floorf(game->last_time * 10) != 0) {
+  if ((int)floorf(game->this_time * 10) - (int)floorf(game->last_time * 10) !=
+      0) {
     game->fps = (size_t)((float)frames_passed / dt_acc);
   }
 
@@ -201,6 +203,9 @@ void update_game(Game *game) {
     player_break(game->player, game->world);
   if (game->window->mouse_right && !game->window->last_mouse_right)
     player_place(game->player, game->world);
+  if(nu_get_key_pressed(game->window, GLFW_KEY_X)) {
+    game->debug = !game->debug;
+  }
 
   // Update world so chunks load around player
   int nx = (int)(floorf(game->player->position[0] / CHUNK_WIDTH));
@@ -224,20 +229,23 @@ void update_game(Game *game) {
 }
 
 void render_game(Game *game) {
-  if (!game) return;
+  if (!game)
+    return;
 
   // Calculate camera's vp
   mat4 vp = {0};
-  float aspect = (float)game->window->width / (float)game->window->height;
+  float width = (float)game->window->width;
+  float height = (float)game->window->height;
+  float aspect = width / height;
   camera_calculate_vp_matrix(game->player->camera, vp, aspect);
 
   // Render everything
   nu_start_frame(game->window);
 
   // Render gradient sky background
-  render_sky(game->sky_renderer, (float)game->window->height,
-             game->player->camera->pitch, game->player->camera->fov);
-    
+  render_sky(game->sky_renderer, height, game->player->camera->pitch,
+             game->player->camera->fov);
+
   // Render world
   render_world(game->world, game->player, aspect);
 
@@ -245,13 +253,25 @@ void render_game(Game *game) {
   render_clouds(game->clouds, game->player, game->this_time, aspect);
 
   // Render crosshair
-  render_crosshair(game->crosshair, game->ui_renderer,
-                   (float)game->window->width, (float)game->window->height);
+  render_crosshair(game->crosshair, game->ui_renderer, width, height);
 
-  // Render FPS counter
-  text_render_number(game->text_renderer, game->ui_renderer, 0, 0, 50, 10,
-                     (float)game->window->width, (float)game->window->height,
-                     (int)game->fps);
+  if (game->debug) {
+    // Render FPS counter
+    char str[1024];
+    sprintf(str, "fps: %d", (int)game->fps);
+    text_render_string(game->text_renderer, game->ui_renderer, 0, height - 20,
+                       20, 10, width, height, str);
+    // Render position
+    sprintf(str, "pos: %.2f, %.2f, %.2f", game->player->position[0],
+            game->player->position[1] - game->player->hitbox_dims[1] / 2.f,
+            game->player->position[2]);
+    text_render_string(game->text_renderer, game->ui_renderer, 0, height - 45,
+                       20, 10, width, height, str);
+    // Test message
+    sprintf(str, "the quick brown fox jumps over the lazy dog");
+    text_render_string(game->text_renderer, game->ui_renderer, 0, height - 70,
+                       20, 10, width, height, str);
+  }
 
   nu_end_frame(game->window);
 }

@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 typedef struct {
   nu_Window *window;
@@ -29,6 +30,7 @@ typedef struct {
   float this_time, last_time, delta_time;
   size_t frame_count;
   size_t fps;
+  bool debug;
 } Game;
 
 Game *create_game(void);

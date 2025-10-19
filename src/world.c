@@ -91,7 +91,9 @@ World *create_world(uint32_t world_seed) {
   world->queue.num_items = 0;
 
 #ifdef MULTITHREAD
-  pthread_create(&world->chunk_thread, NULL, thread_routine, (void *)world);
+  for (size_t i = 0; i < NUM_THREADS; i++) {
+    pthread_create(&world->chunk_threads[i], NULL, thread_routine, (void *)world);
+  }
   // pthread_mutex_init(&world->hashmap_mutex, NULL);
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     pthread_mutex_init(&world->map.bucket_mutexes[i], NULL);
@@ -124,7 +126,9 @@ void destroy_world(World **world) {
 #ifdef MULTITHREAD
   // Stop thread on world destroyed
   (*world)->kill = true;
-  pthread_join((*world)->chunk_thread, NULL);
+  for(size_t i = 0; i < NUM_THREADS; i++) {
+    pthread_join((*world)->chunk_threads[i], NULL);
+  }
   // pthread_mutex_destroy(&(*world)->hashmap_mutex);
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     pthread_mutex_destroy(&(*world)->map.bucket_mutexes[i]);
@@ -232,7 +236,7 @@ bool world_update_queue(World *world) {
     }
   }
   QueueItem item = world->queue.items[min_idx];
-  world->queue.items[min_idx] = world->queue.items[world->queue.num_items - 1];
+  world->queue.items[min_idx] = world->queue.items[--world->queue.num_items];
   world_unlock_queue(world);
 
   // If chunk is not loaded, exit early

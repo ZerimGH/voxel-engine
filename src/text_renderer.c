@@ -1,11 +1,22 @@
 #include "text_renderer.h"
 
-#define NUM_CHARACTERS 11
+#define NUM_CHARACTERS 42 
 
 #define CHARACTER_TEXTURES                                                     \
   "textures/unknown.png", "textures/0.png", "textures/1.png",                  \
       "textures/2.png", "textures/3.png", "textures/4.png", "textures/5.png",  \
-      "textures/6.png", "textures/7.png", "textures/8.png", "textures/9.png"
+      "textures/6.png", "textures/7.png", "textures/8.png", "textures/9.png",  \
+      "textures/a.png", "textures/b.png", "textures/c.png", "textures/d.png",  \
+      "textures/e.png", "textures/f.png", "textures/g.png", "textures/h.png",  \
+      "textures/i.png", "textures/j.png", "textures/k.png", "textures/l.png",  \
+      "textures/m.png", "textures/n.png", "textures/o.png", "textures/p.png",  \
+      "textures/q.png", "textures/r.png", "textures/s.png", "textures/t.png",  \
+      "textures/u.png", "textures/v.png", "textures/w.png", "textures/x.png",  \
+      "textures/y.png", "textures/z.png", \
+      "textures/space.png", "textures/dot.png", "textures/comma.png",          \
+      "textures/minus.png", "textures/colon.png"
+
+static char supported_chars[NUM_CHARACTERS] = "?0123456789abcdefghijklmnopqrstuvwxyz .,-:";
 
 TextRenderer *create_text_renderer(void) {
   nu_Texture *texture =
@@ -37,10 +48,9 @@ void destroy_text_renderer(TextRenderer **text) {
 }
 
 static int char_to_index(char c) {
-  if (c >= '0' && c <= '9') {
-    return c - '0' + 1;
-  } else
-    return 0;
+  char *n = strchr(supported_chars, c);
+  if(!n) return 0;
+  else return n - supported_chars;
 }
 
 static void text_render_indices(TextRenderer *text, UiRenderer *ui, float x,
