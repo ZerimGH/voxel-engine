@@ -1,0 +1,6 @@
+dirt
+grass
+stone
+sand
+log
+diamond_ore
