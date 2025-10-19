@@ -10,13 +10,14 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
     noise = fnlCreateState();
 
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    noise.seed = 1337;
     noise.frequency = 0.005f;
     noise.fractal_type = FNL_FRACTAL_FBM;
-    noise.octaves = 5;
-    noise.lacunarity = 1.7f;
+    noise.octaves = 3;
+    noise.lacunarity = 2.3f;
     noise.gain = 0.4f;
   }
+
+  noise.seed = seed;
 
   if (!chunk)
     return;
@@ -36,7 +37,7 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
   }
 
   static float heightmap[CHUNK_AREA];
-  static float cavemap[CHUNK_VOLUME];
+  static float sandmap[CHUNK_AREA];
 
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
@@ -50,17 +51,15 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
       height_val = height_val / 2.f + 0.5f;
       height_val = height_val * 50;
       heightmap[CHUNK_INDEX(x, 0, z)] = height_val;
-      for(size_t y = 0; y < CHUNK_HEIGHT; y++) {
-        int gy = ccy + y;
-        float cave_val = fnlGetNoise3D(&noise, gx, gy, gz);
-        cavemap[CHUNK_INDEX(x, y, z)] = cave_val;
-      }
+      float sand_val = fnlGetNoise2D(&noise, gx + 1000, gz + 1000);
+      sandmap[CHUNK_INDEX(x, 0, z)] = sand_val;
     }
   }
 
   for (size_t x = 0; x < CHUNK_WIDTH; x++) {
     for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       float height_val = heightmap[CHUNK_INDEX(x, 0, z)];
+      float sand_val = sandmap[CHUNK_INDEX(x, 0, z)];
       if(ccy > height_val) continue;
       for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
         int gy = ccy + y;
@@ -68,7 +67,7 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
         if (gy <= height_val) {
           int dist_from_surface = height_val - gy;
           if (dist_from_surface == 0) {
-            block = BlockGrass;
+            block = sand_val < 0 ? BlockSand : BlockGrass;
           } else if (dist_from_surface <= 5) {
             block = BlockDirt;
           } else {

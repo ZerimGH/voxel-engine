@@ -53,9 +53,7 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   return chunk;
 }
 
-// I ahve no idea why i can just return early from these
 void lock_chunk(Chunk *chunk) {
-  return;
   if (!chunk)
     return;
 #ifdef MULTITHREAD
@@ -64,7 +62,6 @@ void lock_chunk(Chunk *chunk) {
 }
 
 void unlock_chunk(Chunk *chunk) {
-  return;
   if (!chunk)
     return;
 #ifdef MULTITHREAD
