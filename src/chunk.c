@@ -53,7 +53,9 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   return chunk;
 }
 
+// I ahve no idea why i can just return early from these
 void lock_chunk(Chunk *chunk) {
+  return;
   if (!chunk)
     return;
 #ifdef MULTITHREAD
@@ -62,6 +64,7 @@ void lock_chunk(Chunk *chunk) {
 }
 
 void unlock_chunk(Chunk *chunk) {
+  return;
   if (!chunk)
     return;
 #ifdef MULTITHREAD
@@ -72,14 +75,14 @@ void unlock_chunk(Chunk *chunk) {
 void destroy_chunk(Chunk **chunk) {
   if (!chunk || !(*chunk))
     return;
-  // lock_chunk(*chunk);
+  lock_chunk(*chunk);
   if ((*chunk)->mesh)
     nu_destroy_mesh(&(*chunk)->mesh);
   if ((*chunk)->blocks) {
     free((*chunk)->blocks);
     (*chunk)->blocks = NULL;
   }
-  // unlock_chunk(*chunk);
+  unlock_chunk(*chunk);
 #ifdef MULTITHREAD
   pthread_mutex_destroy(&(*chunk)->chunk_mutex);
 #endif

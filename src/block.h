@@ -17,7 +17,11 @@
 
 #define NUM_BLOCK_TEXTURES (NUM_BLOCKS * 3)
 
-typedef enum {
+#include <stdint.h>
+
+typedef uint8_t BlockType;
+
+enum {
   BlockAir,
   BlockDirt,
   BlockGrass,
@@ -25,7 +29,7 @@ typedef enum {
   BlockSand,
   BlockLog,
   BlockDiamondOre,
-} BlockType;
+};
 
 typedef struct {
   BlockType type;
