@@ -203,7 +203,7 @@ void update_game(Game *game) {
     player_break(game->player, game->world);
   if (game->window->mouse_right && !game->window->last_mouse_right)
     player_place(game->player, game->world);
-  if(nu_get_key_pressed(game->window, GLFW_KEY_X)) {
+  if (nu_get_key_pressed(game->window, GLFW_KEY_X)) {
     game->debug = !game->debug;
   }
 
@@ -226,6 +226,60 @@ void update_game(Game *game) {
   game->frame_count++;
 
   nu_update_input(game->window);
+}
+
+static void render_debug(Game *game) {
+  if (!game)
+    return;
+  float width = (float)game->window->width;
+  float height = (float)game->window->height;
+
+  float size = 20.f;
+  float vertical_pad = 5.f;
+
+  float cur_y = height - size;
+
+  // Render FPS counter
+  char str[1024];
+  sprintf(str, "fps: %d", (int)game->fps);
+  text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size, 10,
+                     width, height, str);
+  cur_y -= size;
+  cur_y -= vertical_pad;
+
+  // Render position
+  sprintf(str, "pos: %.2f, %.2f, %.2f", game->player->position[0],
+          game->player->position[1] - game->player->hitbox_dims[1] / 2.f,
+          game->player->position[2]);
+  text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size, 10,
+                     width, height, str);
+  cur_y -= size;
+  cur_y -= vertical_pad;
+
+  // Chunk info
+  Chunk *chunk =
+      world_get_chunkf(game->world, game->player->position[0],
+                       game->player->position[1], game->player->position[2]);
+  sprintf(str, "chunk: %p", (void *)chunk);
+  text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size, 10,
+                     width, height, str);
+  cur_y -= size;
+  cur_y -= vertical_pad;
+
+  if (chunk) {
+    sprintf(str, "  coords: %d, %d, %d", chunk->coords[0], chunk->coords[1],
+            chunk->coords[2]);
+    text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size,
+                       10, width, height, str);
+    cur_y -= size;
+    cur_y -= vertical_pad;
+
+    sprintf(str, "  num vertices: %zu", chunk->mesh ? chunk->mesh->last_send_size : 0); 
+    text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size,
+                       10, width, height, str);
+    cur_y -= size;
+    cur_y -= vertical_pad;
+  }
 }
 
 void render_game(Game *game) {
@@ -256,21 +310,7 @@ void render_game(Game *game) {
   render_crosshair(game->crosshair, game->ui_renderer, width, height);
 
   if (game->debug) {
-    // Render FPS counter
-    char str[1024];
-    sprintf(str, "fps: %d", (int)game->fps);
-    text_render_string(game->text_renderer, game->ui_renderer, 0, height - 20,
-                       20, 10, width, height, str);
-    // Render position
-    sprintf(str, "pos: %.2f, %.2f, %.2f", game->player->position[0],
-            game->player->position[1] - game->player->hitbox_dims[1] / 2.f,
-            game->player->position[2]);
-    text_render_string(game->text_renderer, game->ui_renderer, 0, height - 45,
-                       20, 10, width, height, str);
-    // Test message
-    sprintf(str, "the quick brown fox jumps over the lazy dog");
-    text_render_string(game->text_renderer, game->ui_renderer, 0, height - 70,
-                       20, 10, width, height, str);
+    render_debug(game);
   }
 
   nu_end_frame(game->window);

@@ -80,6 +80,9 @@ void world_update_centre(World *world, int nx, int ny, int nz);
 // Generate and mesh one chunk from the queue, returns true on success, and
 // false if the queue was empty
 bool world_update_queue(World *world);
+// Get the chunk that a set of coordinates are in
+Chunk *world_get_chunk(World *world, int x, int y, int z); 
+Chunk *world_get_chunkf(World *world, float x, float y, float z);
 // Get a pointer to the block at integer coords
 Block *world_get_block(World *world, int x, int y, int z);
 // Set a block at integer coords

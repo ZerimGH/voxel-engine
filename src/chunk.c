@@ -43,7 +43,6 @@ Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
   chunk->coords[1] = chunk_y;
   chunk->coords[2] = chunk_z;
   chunk->blocks = NULL;
-  chunk->num_blocks = 0;
   chunk->mesh =
       nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
   chunk->state = STATE_EMPTY;

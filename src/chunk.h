@@ -33,7 +33,6 @@ typedef enum {
 typedef struct {
   int coords[3];
   Block *blocks;
-  size_t num_blocks;
   nu_Mesh *mesh;
   ChunkState state;
 #ifdef MULTITHREAD

@@ -474,6 +474,28 @@ void world_update_centre(World *world, int nx, int ny, int nz) {
   world_unload_chunks(world);
 }
 
+Chunk *world_get_chunk(World *world, int x, int y, int z) {
+  if (!world)
+    return NULL;
+  int cx = (int)floorf((float)x / (float)CHUNK_WIDTH);
+  int cy = (int)floorf((float)y / (float)CHUNK_HEIGHT);
+  int cz = (int)floorf((float)z / (float)CHUNK_LENGTH);
+  ChunkNode *node = hashmap_get(world, cx, cy, cz);
+  if (!node)
+    return NULL;
+  Chunk *chunk = node->chunk;
+  if (!chunk)
+    return NULL;
+  return chunk;
+}
+
+Chunk *world_get_chunkf(World *world, float x, float y, float z) {
+  int ix = (int)floorf(x);
+  int iy = (int)floorf(y);
+  int iz = (int)floorf(z);
+  return world_get_chunk(world, ix, iy, iz);
+}
+
 Block *world_get_block(World *world, int x, int y, int z) {
   if (!world)
     return NULL;
