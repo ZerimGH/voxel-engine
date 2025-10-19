@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include "profiler.h"
+
 #define WIN_WIDTH 1920
 #define WIN_HEIGHT 1080
 
@@ -26,7 +28,7 @@ Game *create_game(void) {
   }
 
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  glfwSwapInterval(0);
+  glfwSwapInterval(1);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -68,8 +70,9 @@ Game *create_game(void) {
   // Create text_renderer
   text_renderer = create_text_renderer();
   if (!text_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: create_text_renderer() "
-                     "returned NULL\n");
+    sprintf(err_msg,
+            "(create_game): Error creating game: create_text_renderer() "
+            "returned NULL\n");
     goto failure;
   }
 
@@ -146,12 +149,19 @@ void destroy_game(Game **game) {
   *game = NULL;
 }
 
+static void game_update_time(Game *game) {
+  if(!game)
+    return;
+  game->last_time = game->this_time;
+  game->this_time = glfwGetTime();
+  game->delta_time = game->this_time - game->last_time;
+}
+
 void update_game(Game *game) {
   if (!game)
     return;
-  // Get the time of this frame
-  game->this_time = glfwGetTime();
-  game->delta_time = game->this_time - game->last_time;
+  // Update timings
+  game_update_time(game);
 
   // Update player based on input
   game->player->dt = game->delta_time;
@@ -197,16 +207,25 @@ void update_game(Game *game) {
   } while (glfwGetTime() - start_time < time_budget);
 #endif
 
-  // Set time
-  game->last_time = game->this_time;
   game->frame_count++;
 
   nu_update_input(game->window);
 }
 
 void render_game(Game *game) {
-  if (!game)
-    return;
+  if (!game) return;
+
+  // FPS for fps counter
+  static int fps = 0;
+  static float dt_acc = 0.f;
+  static size_t frames_passed = 0;
+  if ((int)floorf(game->this_time * 5) - (int)floorf(game->last_time * 5) != 0) {
+    fps = (int)((float)frames_passed / dt_acc);
+  }
+
+  frames_passed++;
+  dt_acc += game->delta_time;
+
   // Calculate camera's vp
   mat4 vp = {0};
   float aspect = (float)game->window->width / (float)game->window->height;
@@ -214,17 +233,15 @@ void render_game(Game *game) {
 
   // Render everything
   nu_start_frame(game->window);
-
   render_sky(game->sky_renderer, (float)game->window->height,
              game->player->camera->pitch, game->player->camera->fov);
   render_world(game->world, game->player, aspect);
   render_clouds(game->clouds, game->player, game->this_time, aspect);
   render_crosshair(game->crosshair, game->ui_renderer,
                    (float)game->window->width, (float)game->window->height);
-  static int fps = 0;
-  if(game->frame_count % 20 == 0) fps = (int)floorf(1.f / game->delta_time); 
-  text_render_number(game->text_renderer, game->ui_renderer, 0, 0, 50, 10, (float)game->window->width, (float)game->window->height, fps);
-
+  text_render_number(game->text_renderer, game->ui_renderer, 0, 0, 50, 10,
+                     (float)game->window->width, (float)game->window->height,
+                     fps);
   nu_end_frame(game->window);
 }
 

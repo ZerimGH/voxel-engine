@@ -14,6 +14,8 @@ typedef struct {
 
 TextRenderer *create_text_renderer(void);
 void destroy_text_renderer(TextRenderer **text);
-void text_render_number(TextRenderer *text, UiRenderer *ui, float x, float y, float size, float padding, float screen_width, float screen_height, int n);
+void text_render_number(TextRenderer *text, UiRenderer *ui, float x, float y,
+                        float size, float padding, float screen_width,
+                        float screen_height, int n);
 
 #endif

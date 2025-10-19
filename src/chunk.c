@@ -106,4 +106,3 @@ Block *chunk_get_block(Chunk *chunk, size_t x, size_t y, size_t z) {
 
 #include "chunk_gen.c"
 #include "chunk_mesh.c"
-

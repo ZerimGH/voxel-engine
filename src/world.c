@@ -43,7 +43,7 @@ void *thread_routine(void *arg) {
   if (!world)
     return NULL;
   while (!world->kill) {
-    world_update_queue(world); 
+    world_update_queue(world);
     usleep(1000); // Without this, theres a weird slowdown when breaking or
                   // placing blocks.
   }

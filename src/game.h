@@ -9,13 +9,13 @@
 #include "nuGL.h"
 #include "player.h"
 #include "sky.h"
-#include "ui_renderer.h"
 #include "text_renderer.h"
+#include "ui_renderer.h"
 #include "world.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <stdint.h>
 
 typedef struct {
   nu_Window *window;

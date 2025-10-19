@@ -115,16 +115,19 @@ void ui_render_quad(UiRenderer *ui, float x, float y, float w, float h,
 }
 
 void ui_use_array(UiRenderer *ui, bool val) {
-  if(!ui) return;
+  if (!ui)
+    return;
   nu_set_uniform(ui->program, "uUseArray", &val);
 }
 
 void ui_set_index(UiRenderer *ui, int index) {
-  if(!ui) return;
+  if (!ui)
+    return;
   nu_set_uniform(ui->program, "uIndex", &index);
 }
 
-void ui_render_centred_quad(UiRenderer *ui, float x, float y, float w, float h, float screen_width, float screen_height) {
+void ui_render_centred_quad(UiRenderer *ui, float x, float y, float w, float h,
+                            float screen_width, float screen_height) {
   float centred_x = x - w / 2.f;
   float centred_y = y - h / 2.f;
   ui_render_quad(ui, centred_x, centred_y, w, h, screen_width, screen_height);

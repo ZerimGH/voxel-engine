@@ -5,7 +5,7 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
   static fnl_state noise;
   static int noise_init = 0;
 
-  if(!noise_init) {
+  if (!noise_init) {
     noise_init = 1;
     noise = fnlCreateState();
 
@@ -43,9 +43,9 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
   int ccz = chunk->coords[2] * CHUNK_LENGTH;
 
-  for(size_t x = 0; x < CHUNK_WIDTH; x++) {
+  for (size_t x = 0; x < CHUNK_WIDTH; x++) {
     int gx = ccx + x;
-    for(size_t z = 0; z < CHUNK_LENGTH; z++) {
+    for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       int gz = ccz + z;
       float height_val = fnlGetNoise2D(&noise, gx, gz);
       height_val = height_val / 2.f + 0.5f;
@@ -60,7 +60,8 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
     for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       float height_val = heightmap[CHUNK_INDEX(x, 0, z)];
       float sand_val = sandmap[CHUNK_INDEX(x, 0, z)];
-      if(ccy > height_val) continue;
+      if (ccy > height_val)
+        continue;
       for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
         int gy = ccy + y;
         BlockType block = BlockAir;
@@ -69,7 +70,7 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
           if (dist_from_surface == 0) {
             block = sand_val < 0 ? BlockSand : BlockGrass;
           } else if (dist_from_surface <= 5) {
-            block = BlockDirt;
+            block = sand_val < 0 ? BlockSand : BlockDirt;
           } else {
             block = BlockStone;
           }
