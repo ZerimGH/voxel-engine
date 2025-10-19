@@ -43,11 +43,9 @@ void *thread_routine(void *arg) {
   if (!world)
     return NULL;
   while (!world->kill) {
-    if (!world_update_queue(world)) {
-      usleep(1000);
-    }
-    usleep(10); // Without this, theres a weird slowdown when breaking or
-                // placing blocks.
+    world_update_queue(world); 
+    usleep(1000); // Without this, theres a weird slowdown when breaking or
+                  // placing blocks.
   }
   return NULL;
 }
@@ -276,6 +274,7 @@ void render_world(World *world, void *p, float aspect) {
   camera_calculate_vp_matrix(player->camera, vp, aspect);
   nu_use_program(world->program);
   nu_set_uniform(world->program, "uMVP", &vp[0][0]);
+  nu_bind_texture(world->block_textures, 0);
 
   for (size_t i = 0; i < HASHMAP_SIZE; i++) {
     world_lock_bucket(world, i);

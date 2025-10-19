@@ -13,6 +13,7 @@ Game *create_game(void) {
   World *world = NULL;
   Game *game = NULL;
   UiRenderer *ui_renderer = NULL;
+  TextRenderer *text_renderer = NULL;
   Crosshair *crosshair = NULL;
   Clouds *clouds = NULL;
 
@@ -25,6 +26,7 @@ Game *create_game(void) {
   }
 
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwSwapInterval(0);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -63,6 +65,14 @@ Game *create_game(void) {
     goto failure;
   }
 
+  // Create text_renderer
+  text_renderer = create_text_renderer();
+  if (!text_renderer) {
+    sprintf(err_msg, "(create_game): Error creating game: create_text_renderer() "
+                     "returned NULL\n");
+    goto failure;
+  }
+
   // Create crosshair
   crosshair = create_crosshair();
   if (!ui_renderer) {
@@ -97,6 +107,7 @@ failure:
   destroy_player(&player);
   destroy_world(&world);
   destroy_ui_renderer(&ui_renderer);
+  destroy_text_renderer(&text_renderer);
   destroy_crosshair(&crosshair);
   destroy_clouds(&clouds);
   if (game)
@@ -110,10 +121,13 @@ success:
   game->player = player;
   game->world = world;
   game->ui_renderer = ui_renderer;
+  game->text_renderer = text_renderer;
   game->crosshair = crosshair;
   game->clouds = clouds;
   game->last_time = 0.f;
   game->this_time = glfwGetTime();
+  game->delta_time = 0.f;
+  game->frame_count = 0;
   return game;
 }
 
@@ -125,6 +139,7 @@ void destroy_game(Game **game) {
   destroy_player(&(*game)->player);
   destroy_world(&(*game)->world);
   destroy_ui_renderer(&(*game)->ui_renderer);
+  destroy_text_renderer(&(*game)->text_renderer);
   destroy_crosshair(&(*game)->crosshair);
   destroy_clouds(&(*game)->clouds);
   free(*game);
@@ -136,9 +151,10 @@ void update_game(Game *game) {
     return;
   // Get the time of this frame
   game->this_time = glfwGetTime();
+  game->delta_time = game->this_time - game->last_time;
 
   // Update player based on input
-  game->player->dt = game->this_time - game->last_time;
+  game->player->dt = game->delta_time;
   if (nu_get_key_state(game->window, GLFW_KEY_S))
     player_backwards(game->player);
   if (nu_get_key_state(game->window, GLFW_KEY_W))
@@ -183,6 +199,7 @@ void update_game(Game *game) {
 
   // Set time
   game->last_time = game->this_time;
+  game->frame_count++;
 
   nu_update_input(game->window);
 }
@@ -204,6 +221,9 @@ void render_game(Game *game) {
   render_clouds(game->clouds, game->player, game->this_time, aspect);
   render_crosshair(game->crosshair, game->ui_renderer,
                    (float)game->window->width, (float)game->window->height);
+  static int fps = 0;
+  if(game->frame_count % 20 == 0) fps = (int)floorf(1.f / game->delta_time); 
+  text_render_number(game->text_renderer, game->ui_renderer, 0, 0, 50, 10, (float)game->window->width, (float)game->window->height, fps);
 
   nu_end_frame(game->window);
 }

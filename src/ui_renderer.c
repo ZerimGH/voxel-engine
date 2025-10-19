@@ -35,11 +35,22 @@ UiRenderer *create_ui_renderer(void) {
     nu_destroy_mesh(&mesh);
     return NULL;
   }
-  nu_register_uniform(program, "uTexture", GL_INT);
   nu_register_uniform(program, "uPos", GL_FLOAT_VEC2);
   nu_register_uniform(program, "uScale", GL_FLOAT_VEC2);
+
+  nu_register_uniform(program, "uTexture", GL_INT);
+  nu_register_uniform(program, "uTextureArray", GL_INT);
+  nu_register_uniform(program, "uUseArray", GL_INT);
+  nu_register_uniform(program, "uIndex", GL_INT);
+
   int unit = 0;
   nu_set_uniform(program, "uTexture", &unit);
+  unit++;
+  nu_set_uniform(program, "uTextureArray", &unit);
+
+  int zero = 0;
+  nu_set_uniform(program, "uUseArray", &zero);
+  nu_set_uniform(program, "uIndex", &zero);
 
   UiRenderer *ui = calloc(1, sizeof(UiRenderer));
   if (!ui) {
@@ -101,6 +112,16 @@ void ui_render_quad(UiRenderer *ui, float x, float y, float w, float h,
   nu_use_program(ui->program);
   nu_render_mesh(ui->quad_mesh);
   glDepthMask(GL_TRUE);
+}
+
+void ui_use_array(UiRenderer *ui, bool val) {
+  if(!ui) return;
+  nu_set_uniform(ui->program, "uUseArray", &val);
+}
+
+void ui_set_index(UiRenderer *ui, int index) {
+  if(!ui) return;
+  nu_set_uniform(ui->program, "uIndex", &index);
 }
 
 void ui_render_centred_quad(UiRenderer *ui, float x, float y, float w, float h, float screen_width, float screen_height) {

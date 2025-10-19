@@ -34,5 +34,6 @@ void render_crosshair(Crosshair *crosshair, UiRenderer *ui, float w, float h) {
   // calculate size of crosshair
   float screen_size = w / 1920.f * CROSSHAIR_SIZE;
   nu_bind_texture(crosshair->texture, 0);
+  ui_use_array(ui, false);
   ui_render_centred_quad(ui, w / 2.f, h / 2.f, screen_size, screen_size, w, h);
 }

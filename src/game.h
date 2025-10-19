@@ -10,6 +10,7 @@
 #include "player.h"
 #include "sky.h"
 #include "ui_renderer.h"
+#include "text_renderer.h"
 #include "world.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,9 +23,11 @@ typedef struct {
   Player *player;
   World *world;
   UiRenderer *ui_renderer;
+  TextRenderer *text_renderer;
   Crosshair *crosshair;
   Clouds *clouds;
-  float this_time, last_time;
+  float this_time, last_time, delta_time;
+  size_t frame_count;
 } Game;
 
 Game *create_game(void);

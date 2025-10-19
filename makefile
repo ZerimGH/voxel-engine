@@ -5,7 +5,7 @@ NU_GL_DIR = nuGL2
 BUILD_DIR = build
 
 #SRCS = $(SRC_DIR)/*.c $(NU_GL_DIR)/nuGL.c
-SRCS = $(SRC_DIR)/camera.c $(SRC_DIR)/chunk.c $(SRC_DIR)/game.c $(SRC_DIR)/main.c $(SRC_DIR)/noise.c $(SRC_DIR)/player.c $(SRC_DIR)/sky.c $(SRC_DIR)/world.c $(SRC_DIR)/ui_renderer.c $(SRC_DIR)/crosshair.c $(SRC_DIR)/clouds.c $(NU_GL_DIR)/nuGL.c
+SRCS = $(SRC_DIR)/camera.c $(SRC_DIR)/chunk.c $(SRC_DIR)/game.c $(SRC_DIR)/main.c $(SRC_DIR)/noise.c $(SRC_DIR)/player.c $(SRC_DIR)/sky.c $(SRC_DIR)/world.c $(SRC_DIR)/ui_renderer.c $(SRC_DIR)/crosshair.c $(SRC_DIR)/clouds.c $(SRC_DIR)/text_renderer.c $(NU_GL_DIR)/nuGL.c
 TARGET = main
 
 CFLAGS = -Wall -I. -I$(NU_GL_DIR) -I./external -Ilibs
