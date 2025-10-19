@@ -28,7 +28,7 @@ Game *create_game(void) {
   }
 
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  glfwSwapInterval(1);
+  glfwSwapInterval(0);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
