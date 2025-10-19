@@ -28,6 +28,7 @@ typedef struct {
   Clouds *clouds;
   float this_time, last_time, delta_time;
   size_t frame_count;
+  size_t fps;
 } Game;
 
 Game *create_game(void);

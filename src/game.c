@@ -84,6 +84,7 @@ Game *create_game(void) {
     goto failure;
   }
 
+  // Create clouds
   clouds = create_clouds();
   if (!clouds) {
     sprintf(
@@ -155,6 +156,16 @@ static void game_update_time(Game *game) {
   game->last_time = game->this_time;
   game->this_time = glfwGetTime();
   game->delta_time = game->this_time - game->last_time;
+
+  // FPS counter
+  static float dt_acc = 0.f;
+  static size_t frames_passed = 0;
+  if ((int)floorf(game->this_time * 5) - (int)floorf(game->last_time * 5) != 0) {
+    game->fps = (size_t)((float)frames_passed / dt_acc);
+  }
+
+  frames_passed++;
+  dt_acc += game->delta_time;
 }
 
 void update_game(Game *game) {
@@ -215,17 +226,6 @@ void update_game(Game *game) {
 void render_game(Game *game) {
   if (!game) return;
 
-  // FPS for fps counter
-  static int fps = 0;
-  static float dt_acc = 0.f;
-  static size_t frames_passed = 0;
-  if ((int)floorf(game->this_time * 5) - (int)floorf(game->last_time * 5) != 0) {
-    fps = (int)((float)frames_passed / dt_acc);
-  }
-
-  frames_passed++;
-  dt_acc += game->delta_time;
-
   // Calculate camera's vp
   mat4 vp = {0};
   float aspect = (float)game->window->width / (float)game->window->height;
@@ -233,15 +233,26 @@ void render_game(Game *game) {
 
   // Render everything
   nu_start_frame(game->window);
+
+  // Render gradient sky background
   render_sky(game->sky_renderer, (float)game->window->height,
              game->player->camera->pitch, game->player->camera->fov);
+    
+  // Render world
   render_world(game->world, game->player, aspect);
+
+  // Render clouds
   render_clouds(game->clouds, game->player, game->this_time, aspect);
+
+  // Render crosshair
   render_crosshair(game->crosshair, game->ui_renderer,
                    (float)game->window->width, (float)game->window->height);
+
+  // Render FPS counter
   text_render_number(game->text_renderer, game->ui_renderer, 0, 0, 50, 10,
                      (float)game->window->width, (float)game->window->height,
-                     fps);
+                     (int)game->fps);
+
   nu_end_frame(game->window);
 }
 
