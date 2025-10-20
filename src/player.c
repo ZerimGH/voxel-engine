@@ -344,6 +344,8 @@ static void player_check_grounded(Player *player, World *world) {
   player->grounded = pos_collides(pos_under, player->hitbox_dims, world);
 }
 
+static RayCastReturn player_eye_raycast(Player *player, World *world);
+
 // Update a player
 void player_update(Player *player, World *world) {
   // Check if grounded
@@ -394,6 +396,8 @@ void player_update(Player *player, World *world) {
   player->last_grounded = player->grounded;
   // Set movement to 0 for next frame
   glm_vec3_zero(player->movement);
+  // Update selection
+  player->selection = player_eye_raycast(player, world);
 }
 
 static RayCastReturn player_eye_raycast(Player *player, World *world) {
@@ -408,21 +412,19 @@ static RayCastReturn player_eye_raycast(Player *player, World *world) {
 
 // Break a block
 bool player_break(Player *player, World *world) {
-  RayCastReturn ret = player_eye_raycast(player, world);
-  if (!ret.hit)
-    return false;
-  world_set_block(world, BlockAir, ret.hit_x, ret.hit_y, ret.hit_z);
+  if(!player || !world) return false;
+  if(!player->selection.hit || !player->selection.block_hit) return false;
+  world_set_block(world, BlockAir, player->selection.hit_x, player->selection.hit_y, player->selection.hit_z);
   return true;
 }
 
 // Place a block
 bool player_place(Player *player, World *world) {
-  RayCastReturn ret = player_eye_raycast(player, world);
-  if (!ret.hit)
-    return false;
-  if (pos_collides_specific(player->position, player->hitbox_dims, ret.last_x,
-                            ret.last_y, ret.last_z))
-    return false;
-  world_set_block(world, NUM_BLOCKS, ret.last_x, ret.last_y, ret.last_z);
+  if(!player || !world) return false;
+  if(!player->selection.hit || !player->selection.block_hit) return false;
+  if (pos_collides_specific(player->position, player->hitbox_dims, player->selection.last_x, player->selection.last_y, player->selection.last_z)) return false;
+
+  world_set_block(world, BlockStone, player->selection.last_x, player->selection.last_y, player->selection.last_z);
   return true;
 }
+

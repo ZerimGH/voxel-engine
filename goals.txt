@@ -1,6 +1,5 @@
 LONG TERM (im putting these off):
   - Block lighting (BFS / Djikstras)
-  - Chunk-face culling for the simple mesher 
   - Chunk saving / Loading
   - Entities, player model, animations
 

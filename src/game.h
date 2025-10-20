@@ -12,6 +12,7 @@
 #include "text_renderer.h"
 #include "ui_renderer.h"
 #include "world.h"
+#include "outline.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,7 @@ typedef struct {
   TextRenderer *text_renderer;
   Crosshair *crosshair;
   Clouds *clouds;
+  OutlineRenderer *outline_renderer;
   float this_time, last_time, delta_time;
   size_t frame_count;
   size_t fps;

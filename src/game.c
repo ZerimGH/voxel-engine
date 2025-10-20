@@ -17,6 +17,7 @@ Game *create_game(void) {
   UiRenderer *ui_renderer = NULL;
   TextRenderer *text_renderer = NULL;
   Crosshair *crosshair = NULL;
+  OutlineRenderer *outline_renderer = NULL;
   Clouds *clouds = NULL;
 
   // Create window
@@ -93,6 +94,15 @@ Game *create_game(void) {
     goto failure;
   }
 
+  // Create outline renderer
+  outline_renderer = create_outline_renderer();
+  if (!outline_renderer) {
+    sprintf(
+        err_msg,
+        "(create_game): Error creating game: create_outline_renderer() returned NULL\n");
+    goto failure;
+  }
+
   // Create game
   game = calloc(1, sizeof(Game));
   if (!game) {
@@ -114,6 +124,7 @@ failure:
   destroy_text_renderer(&text_renderer);
   destroy_crosshair(&crosshair);
   destroy_clouds(&clouds);
+  destroy_outline_renderer(&outline_renderer);
   if (game)
     free(game);
   return NULL;
@@ -128,6 +139,7 @@ success:
   game->text_renderer = text_renderer;
   game->crosshair = crosshair;
   game->clouds = clouds;
+  game->outline_renderer = outline_renderer;
   game->last_time = 0.f;
   game->this_time = glfwGetTime();
   game->delta_time = 0.f;
@@ -147,6 +159,7 @@ void destroy_game(Game **game) {
   destroy_text_renderer(&(*game)->text_renderer);
   destroy_crosshair(&(*game)->crosshair);
   destroy_clouds(&(*game)->clouds);
+  destroy_outline_renderer(&(*game)->outline_renderer);
   free(*game);
   *game = NULL;
 }
@@ -228,70 +241,61 @@ void update_game(Game *game) {
   nu_update_input(game->window);
 }
 
-static void render_debug(Game *game) {
-  if (!game)
-    return;
+static void debug_print(Game *game, char *str, float *cur_y) {
   float width = (float)game->window->width;
   float height = (float)game->window->height;
-
   float size = 20.f;
   float vertical_pad = 5.f;
+  *cur_y -= size;
+  *cur_y -= vertical_pad;
+  text_render_string(game->text_renderer, game->ui_renderer, 0, *cur_y, size, 10,
+                     width, height, str);
+}
 
-  float cur_y = height - size;
+static void render_debug(Game *game) {
+  if (!game || !game->window)
+    return;
+  float cur_y = (float)game->window->height;
 
   // Render FPS counter
   char str[1024];
   sprintf(str, "fps: %d", (int)game->fps);
-  text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size, 10,
-                     width, height, str);
-  cur_y -= size;
-  cur_y -= vertical_pad;
+  debug_print(game, str, &cur_y);
+
+  // Render time
+  sprintf(str, "time: %.2f", game->this_time);
+  debug_print(game, str, &cur_y);
 
   // Render position
   sprintf(str, "pos: %.2f, %.2f, %.2f", game->player->position[0],
           game->player->position[1] - game->player->hitbox_dims[1] / 2.f,
           game->player->position[2]);
-  text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size, 10,
-                     width, height, str);
-  cur_y -= size;
-  cur_y -= vertical_pad;
+  debug_print(game, str, &cur_y);
 
   // Chunk info
   Chunk *chunk =
       world_get_chunkf(game->world, game->player->position[0],
                        game->player->position[1], game->player->position[2]);
   sprintf(str, "chunk: %p", (void *)chunk);
-  text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size, 10,
-                     width, height, str);
-  cur_y -= size;
-  cur_y -= vertical_pad;
+  debug_print(game, str, &cur_y);
 
   if (chunk) {
     sprintf(str, "  coords: %d, %d, %d", chunk->coords[0], chunk->coords[1],
             chunk->coords[2]);
-    text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size,
-                       10, width, height, str);
-    cur_y -= size;
-    cur_y -= vertical_pad;
+    debug_print(game, str, &cur_y);
 
-    sprintf(str, "  num vertices: %zu", chunk->mesh ? chunk->mesh->last_send_size : 0); 
-    text_render_string(game->text_renderer, game->ui_renderer, 0, cur_y, size,
-                       10, width, height, str);
-    cur_y -= size;
-    cur_y -= vertical_pad;
+    sprintf(str, "  num vertices: %zu", chunk->mesh ? chunk->mesh->last_send_size / chunk->mesh->stride : 0); 
+    debug_print(game, str, &cur_y);
   }
 }
 
 void render_game(Game *game) {
-  if (!game)
+  if (!game || !game->window)
     return;
 
-  // Calculate camera's vp
-  mat4 vp = {0};
-  float width = (float)game->window->width;
-  float height = (float)game->window->height;
+  float width = (float) game->window->width;
+  float height = (float) game->window->height;
   float aspect = width / height;
-  camera_calculate_vp_matrix(game->player->camera, vp, aspect);
 
   // Render everything
   nu_start_frame(game->window);
@@ -308,6 +312,9 @@ void render_game(Game *game) {
 
   // Render crosshair
   render_crosshair(game->crosshair, game->ui_renderer, width, height);
+
+  // Render block outline
+  render_outline(game->outline_renderer, game->player, width, height);
 
   if (game->debug) {
     render_debug(game);

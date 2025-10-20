@@ -31,11 +31,11 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
     int gx = ccx + x;
     for (size_t z = 0; z < CHUNK_LENGTH; z++) {
       int gz = ccz + z;
-      float height_val = octave_noise_2d(gx, gz, 3, 0.5, 2.f, 256, seed);
+      float height_val = octave_noise_2d(gx, gz, 5, 0.3, 1.7, 256, seed);
       height_val = height_val / 2.f + 0.5f;
-      height_val = height_val * 50;
+      height_val = height_val * 100;
       heightmap[CHUNK_INDEX(x, 0, z)] = height_val;
-      float sand_val = octave_noise_2d(gx, gz, 1, 1.f, 1.f, 256, seed + 10);
+      float sand_val = octave_noise_2d(gx, gz, 1, 1.f, 1.f, 128, seed + 10);
       sandmap[CHUNK_INDEX(x, 0, z)] = sand_val;
     }
   }

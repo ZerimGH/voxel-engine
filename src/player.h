@@ -39,6 +39,7 @@ typedef struct {
   float zoom_interp;
 
   float dt; // Deltatime, should be set each frame
+  RayCastReturn selection;  // The block that the player is looking at
 } Player;
 
 // Create a player
