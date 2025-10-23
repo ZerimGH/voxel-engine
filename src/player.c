@@ -91,9 +91,7 @@ static void update_camera_pos(Player *player) {
       (PLAYER_EYE_HEIGHT - PLAYER_EYE_HEIGHT_CROUCHING) * player->crouch_interp;
   player->camera->position[2] = player->position[2];
   player->camera->fov = WALKING_FOV;
-  if (player->sprint_interp > 0.05f)
-    player->camera->fov =
-        WALKING_FOV + (SPRINTING_FOV - WALKING_FOV) * player->sprint_interp;
+  player->camera->fov = WALKING_FOV + (SPRINTING_FOV - WALKING_FOV) * player->sprint_interp;
   player->camera->fov /= (player->zoom_interp * 3.f) + 1.f;
 }
 
@@ -139,7 +137,7 @@ void player_set_sprinting(Player *player, bool state) {
     return;
   if (state)
     player->is_sprinting = true;
-  // Dont modify state if false, so the player can keep sprinting
+  // Dont modify is_sprinting if state false, so the player can keep sprinting
 }
 
 void player_set_crouching(Player *player, bool state) {
@@ -331,7 +329,7 @@ static void player_handle_jump(Player *player) {
   if (player->is_jumping) {
     if (player->grounded && player->jump_time == 0.f) {
       player->velocity[1] = sqrtf(2.f * fabsf(GRAVITY) * PLAYER_JUMP_HEIGHT);
-      player->jump_time = 0.6f; // 0.6 seconds between jumps while holding
+      player->jump_time = 0.55f; // 0.55 seconds between jumps while holding
     }
   } else
     player->jump_time = 0.f; // Reset timer if not jumping
@@ -374,8 +372,10 @@ void player_update(Player *player, World *world) {
     player->crouch_interp = MAX(player->crouch_interp, 0.f);
   }
   if (player->is_sprinting) {
-    player->sprint_interp += player->dt * 7.5f;
-    player->sprint_interp = MIN(player->sprint_interp, 1.f);
+    if(player->keep_sprint) {
+      player->sprint_interp += player->dt * 7.5f;
+      player->sprint_interp = MIN(player->sprint_interp, 1.f);
+    }
   } else {
     player->sprint_interp -= player->dt * 7.5f;
     player->sprint_interp = MAX(player->sprint_interp, 0.f);
