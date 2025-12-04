@@ -6,16 +6,13 @@
 
 #define NUM_BLOCK_TEXTURES (NUM_BLOCKS * 3)
 
-#define BLOCK_TEXTURES                                                         \
-  "textures/dirt-top.png", "textures/dirt-side.png",                           \
-      "textures/dirt-bottom.png", "textures/grass-top.png",                    \
-      "textures/grass-side.png", "textures/grass-bottom.png",                  \
-      "textures/stone-top.png", "textures/stone-side.png",                     \
-      "textures/stone-bottom.png", "textures/sand-top.png",                    \
-      "textures/sand-side.png", "textures/sand-bottom.png",                    \
-      "textures/log-top.png", "textures/log-side.png",                         \
-      "textures/log-bottom.png", "textures/diamond_ore-top.png",               \
-      "textures/diamond_ore-side.png", "textures/diamond_ore-bottom.png"
+#define BLOCK_TEXTURES \
+"textures/Dirt-top.png", "textures/Dirt-side.png", "textures/Dirt-bottom.png", \
+"textures/Grass-top.png", "textures/Grass-side.png", "textures/Grass-bottom.png", \
+"textures/Stone-top.png", "textures/Stone-side.png", "textures/Stone-bottom.png", \
+"textures/Sand-top.png", "textures/Sand-side.png", "textures/Sand-bottom.png", \
+"textures/Log-top.png", "textures/Log-side.png", "textures/Log-bottom.png", \
+"textures/DiamondOre-top.png", "textures/DiamondOre-side.png", "textures/DiamondOre-bottom.png"
 
 #include <stdint.h>
 
@@ -29,6 +26,7 @@ enum {
   BlockSand,
   BlockLog,
   BlockDiamondOre,
+
 };
 
 typedef struct {

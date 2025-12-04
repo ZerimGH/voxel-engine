@@ -59,12 +59,10 @@ typedef uint8_t BlockType;
 
 enum {
   BlockAir,
-  BlockDirt,
-  BlockGrass,
-  BlockStone,
-  BlockSand,
-  BlockLog,
-  BlockDiamondOre,
+"""
+    for block in blocks:
+        out += "  Block" + block + ",\n";
+    out +="""
 };
 
 typedef struct {
