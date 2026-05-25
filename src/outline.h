@@ -4,15 +4,15 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
-#include "nuGL.h"
-#include "world.h"
-#include "player.h"
 #include "camera.h"
+#include "nuGL.h"
+#include "player.h"
+#include "world.h"
 
 // Structs
 typedef struct {
-  nu_Program *program;
-  nu_Mesh *mesh;
+    nu_Program *program;
+    nu_Mesh *mesh;
 } OutlineRenderer;
 
 // Function prototypes

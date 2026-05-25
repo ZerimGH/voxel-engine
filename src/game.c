@@ -2,329 +2,321 @@
 
 #include "profiler.h"
 
-#define WIN_WIDTH 1920
+#define WIN_WIDTH  1920
 #define WIN_HEIGHT 1080
 
 #define FULLSCREEN true
 
 Game *create_game(void) {
-  char err_msg[1024] = {0};
-  nu_Window *window = NULL;
-  SkyRenderer *sky_renderer = NULL;
-  Player *player = NULL;
-  World *world = NULL;
-  Game *game = NULL;
-  UiRenderer *ui_renderer = NULL;
-  TextRenderer *text_renderer = NULL;
-  Crosshair *crosshair = NULL;
-  OutlineRenderer *outline_renderer = NULL;
-  Clouds *clouds = NULL;
+    char err_msg[1024] = {0};
+    nu_Window *window = NULL;
+    SkyRenderer *sky_renderer = NULL;
+    Player *player = NULL;
+    World *world = NULL;
+    Game *game = NULL;
+    UiRenderer *ui_renderer = NULL;
+    TextRenderer *text_renderer = NULL;
+    Crosshair *crosshair = NULL;
+    OutlineRenderer *outline_renderer = NULL;
+    Clouds *clouds = NULL;
 
-  // Create window
-  window = nu_create_window(WIN_WIDTH, WIN_HEIGHT, NULL, FULLSCREEN);
-  if (!window) {
-    sprintf(err_msg, "(create_game): Error creating game: nu_create_window() "
-                     "returned NULL.\n");
-    goto failure;
-  }
+    // Create window
+    window = nu_create_window(WIN_WIDTH, WIN_HEIGHT, NULL, FULLSCREEN);
+    if (!window) {
+        sprintf(err_msg, "(create_game): Error creating game: nu_create_window() "
+                         "returned NULL.\n");
+        goto failure;
+    }
 
-  glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  glfwSwapInterval(1);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSwapInterval(1);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // Create sky renderer
-  sky_renderer = create_sky_renderer();
-  if (!sky_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: "
-                     "create_sky_renderer() returned NULL\n");
-    goto failure;
-  }
+    // Create sky renderer
+    sky_renderer = create_sky_renderer();
+    if (!sky_renderer) {
+        sprintf(err_msg, "(create_game): Error creating game: "
+                         "create_sky_renderer() returned NULL\n");
+        goto failure;
+    }
 
-  // Create camera
-  player = create_player();
-  if (!player) {
-    sprintf(
-        err_msg,
-        "(create_game): Error creating game: create_player() returned NULL\n");
-    goto failure;
-  }
+    // Create camera
+    player = create_player();
+    if (!player) {
+        sprintf(err_msg, "(create_game): Error creating game: create_player() returned NULL\n");
+        goto failure;
+    }
 
-  // Create world
-  uint32_t seed = time(NULL);
-  world = create_world(seed);
-  if (!world) {
-    sprintf(
-        err_msg,
-        "(create_game): Error creating game: create_world() returned NULL\n");
-    goto failure;
-  }
+    // Create world
+    uint32_t seed = time(NULL);
+    world = create_world(seed);
+    if (!world) {
+        sprintf(err_msg, "(create_game): Error creating game: create_world() returned NULL\n");
+        goto failure;
+    }
 
-  // Create ui_renderer
-  ui_renderer = create_ui_renderer();
-  if (!ui_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: create_ui_renderer() "
-                     "returned NULL\n");
-    goto failure;
-  }
+    // Create ui_renderer
+    ui_renderer = create_ui_renderer();
+    if (!ui_renderer) {
+        sprintf(err_msg, "(create_game): Error creating game: create_ui_renderer() "
+                         "returned NULL\n");
+        goto failure;
+    }
 
-  // Create text_renderer
-  text_renderer = create_text_renderer();
-  if (!text_renderer) {
-    sprintf(err_msg,
-            "(create_game): Error creating game: create_text_renderer() "
-            "returned NULL\n");
-    goto failure;
-  }
+    // Create text_renderer
+    text_renderer = create_text_renderer();
+    if (!text_renderer) {
+        sprintf(err_msg, "(create_game): Error creating game: create_text_renderer() "
+                         "returned NULL\n");
+        goto failure;
+    }
 
-  // Create crosshair
-  crosshair = create_crosshair();
-  if (!ui_renderer) {
-    sprintf(err_msg, "(create_game): Error creating game: create_crosshair() "
-                     "returned NULL\n");
-    goto failure;
-  }
+    // Create crosshair
+    crosshair = create_crosshair();
+    if (!ui_renderer) {
+        sprintf(err_msg, "(create_game): Error creating game: create_crosshair() "
+                         "returned NULL\n");
+        goto failure;
+    }
 
-  // Create clouds
-  clouds = create_clouds();
-  if (!clouds) {
-    sprintf(
-        err_msg,
-        "(create_game): Error creating game: create_clouds() returned NULL\n");
-    goto failure;
-  }
+    // Create clouds
+    clouds = create_clouds();
+    if (!clouds) {
+        sprintf(err_msg, "(create_game): Error creating game: create_clouds() returned NULL\n");
+        goto failure;
+    }
 
-  // Create outline renderer
-  outline_renderer = create_outline_renderer();
-  if (!outline_renderer) {
-    sprintf(
-        err_msg,
-        "(create_game): Error creating game: create_outline_renderer() returned NULL\n");
-    goto failure;
-  }
+    // Create outline renderer
+    outline_renderer = create_outline_renderer();
+    if (!outline_renderer) {
+        sprintf(err_msg, "(create_game): Error creating game: create_outline_renderer() returned NULL\n");
+        goto failure;
+    }
 
-  // Create game
-  game = calloc(1, sizeof(Game));
-  if (!game) {
-    sprintf(
-        err_msg,
-        "(create_game): Error creating game: calloc failed for Game *game.\n");
-    goto failure;
-  }
+    // Create game
+    game = calloc(1, sizeof(Game));
+    if (!game) {
+        sprintf(err_msg, "(create_game): Error creating game: calloc failed for Game *game.\n");
+        goto failure;
+    }
 
-  goto success;
+    goto success;
 
 failure:
-  fprintf(stderr, "%.1023s", err_msg);
-  nu_destroy_window(&window);
-  destroy_sky_renderer(&sky_renderer);
-  destroy_player(&player);
-  destroy_world(&world);
-  destroy_ui_renderer(&ui_renderer);
-  destroy_text_renderer(&text_renderer);
-  destroy_crosshair(&crosshair);
-  destroy_clouds(&clouds);
-  destroy_outline_renderer(&outline_renderer);
-  if (game)
-    free(game);
-  return NULL;
+    fprintf(stderr, "%.1023s", err_msg);
+    nu_destroy_window(&window);
+    destroy_sky_renderer(&sky_renderer);
+    destroy_player(&player);
+    destroy_world(&world);
+    destroy_ui_renderer(&ui_renderer);
+    destroy_text_renderer(&text_renderer);
+    destroy_crosshair(&crosshair);
+    destroy_clouds(&clouds);
+    destroy_outline_renderer(&outline_renderer);
+    if (game) {
+        free(game);
+    }
+    return NULL;
 
 success:
-  // Set things
-  game->window = window;
-  game->sky_renderer = sky_renderer;
-  game->player = player;
-  game->world = world;
-  game->ui_renderer = ui_renderer;
-  game->text_renderer = text_renderer;
-  game->crosshair = crosshair;
-  game->clouds = clouds;
-  game->outline_renderer = outline_renderer;
-  game->last_time = 0.f;
-  game->this_time = glfwGetTime();
-  game->delta_time = 0.f;
-  game->frame_count = 0;
-  game->debug = false;
-  return game;
+    // Set things
+    game->window = window;
+    game->sky_renderer = sky_renderer;
+    game->player = player;
+    game->world = world;
+    game->ui_renderer = ui_renderer;
+    game->text_renderer = text_renderer;
+    game->crosshair = crosshair;
+    game->clouds = clouds;
+    game->outline_renderer = outline_renderer;
+    game->last_time = 0.f;
+    game->this_time = glfwGetTime();
+    game->delta_time = 0.f;
+    game->frame_count = 0;
+    game->debug = false;
+    return game;
 }
 
 void destroy_game(Game **game) {
-  if (!game || !(*game))
-    return;
-  nu_destroy_window(&(*game)->window);
-  destroy_sky_renderer(&(*game)->sky_renderer);
-  destroy_player(&(*game)->player);
-  destroy_world(&(*game)->world);
-  destroy_ui_renderer(&(*game)->ui_renderer);
-  destroy_text_renderer(&(*game)->text_renderer);
-  destroy_crosshair(&(*game)->crosshair);
-  destroy_clouds(&(*game)->clouds);
-  destroy_outline_renderer(&(*game)->outline_renderer);
-  free(*game);
-  *game = NULL;
+    if (!game || !(*game)) {
+        return;
+    }
+    nu_destroy_window(&(*game)->window);
+    destroy_sky_renderer(&(*game)->sky_renderer);
+    destroy_player(&(*game)->player);
+    destroy_world(&(*game)->world);
+    destroy_ui_renderer(&(*game)->ui_renderer);
+    destroy_text_renderer(&(*game)->text_renderer);
+    destroy_crosshair(&(*game)->crosshair);
+    destroy_clouds(&(*game)->clouds);
+    destroy_outline_renderer(&(*game)->outline_renderer);
+    free(*game);
+    *game = NULL;
 }
 
 static void game_update_time(Game *game) {
-  if (!game)
-    return;
-  game->last_time = game->this_time;
-  game->this_time = glfwGetTime();
-  game->delta_time = game->this_time - game->last_time;
+    if (!game) {
+        return;
+    }
+    game->last_time = game->this_time;
+    game->this_time = glfwGetTime();
+    game->delta_time = game->this_time - game->last_time;
 
-  // FPS counter
-  static float dt_acc = 0.f;
-  static size_t frames_passed = 0;
-  if ((int)floorf(game->this_time * 10) - (int)floorf(game->last_time * 10) !=
-      0) {
-    game->fps = (size_t)((float)frames_passed / dt_acc);
-  }
+    // FPS counter
+    static float dt_acc = 0.f;
+    static size_t frames_passed = 0;
+    if ((int)floorf(game->this_time * 10) - (int)floorf(game->last_time * 10) != 0) {
+        game->fps = (size_t)((float)frames_passed / dt_acc);
+    }
 
-  frames_passed++;
-  dt_acc += game->delta_time;
+    frames_passed++;
+    dt_acc += game->delta_time;
 }
 
 void update_game(Game *game) {
-  if (!game)
-    return;
-  // Update timings
-  game_update_time(game);
+    if (!game) {
+        return;
+    }
+    // Update timings
+    game_update_time(game);
 
-  // Update player based on input
-  game->player->dt = game->delta_time;
-  if (nu_get_key_state(game->window, GLFW_KEY_S))
-    player_backwards(game->player);
-  if (nu_get_key_state(game->window, GLFW_KEY_W))
-    player_forwards(game->player);
-  if (nu_get_key_state(game->window, GLFW_KEY_A))
-    player_left(game->player);
-  if (nu_get_key_state(game->window, GLFW_KEY_D))
-    player_right(game->player);
-  player_set_jumping(game->player,
-                     nu_get_key_state(game->window, GLFW_KEY_SPACE));
-  player_set_crouching(game->player,
-                       nu_get_key_state(game->window, GLFW_KEY_LEFT_SHIFT));
-  player_set_sprinting(
-      game->player,
-      nu_get_key_pressed(game->window, GLFW_KEY_LEFT_CONTROL) ||
-          (nu_get_key_pressed(game->window, GLFW_KEY_W) &&
-           nu_get_key_state(game->window, GLFW_KEY_LEFT_CONTROL)));
-  player_set_zooming(game->player, nu_get_key_state(game->window, GLFW_KEY_F));
-  player_rotate(game->player, nu_get_delta_mouse_x(game->window),
-                -nu_get_delta_mouse_y(game->window));
-  player_update(game->player, game->world);
-  if (game->window->mouse_left && !game->window->last_mouse_left)
-    player_break(game->player, game->world);
-  if (game->window->mouse_right && !game->window->last_mouse_right)
-    player_place(game->player, game->world);
-  if (nu_get_key_pressed(game->window, GLFW_KEY_X)) {
-    game->debug = !game->debug;
-  }
+    // Update player based on input
+    game->player->dt = game->delta_time;
+    if (nu_get_key_state(game->window, GLFW_KEY_S)) {
+        player_backwards(game->player);
+    }
+    if (nu_get_key_state(game->window, GLFW_KEY_W)) {
+        player_forwards(game->player);
+    }
+    if (nu_get_key_state(game->window, GLFW_KEY_A)) {
+        player_left(game->player);
+    }
+    if (nu_get_key_state(game->window, GLFW_KEY_D)) {
+        player_right(game->player);
+    }
+    player_set_jumping(game->player, nu_get_key_state(game->window, GLFW_KEY_SPACE));
+    player_set_crouching(game->player, nu_get_key_state(game->window, GLFW_KEY_LEFT_SHIFT));
+    player_set_sprinting(game->player, nu_get_key_pressed(game->window, GLFW_KEY_LEFT_CONTROL)
+                                           || (nu_get_key_pressed(game->window, GLFW_KEY_W)
+                                               && nu_get_key_state(game->window, GLFW_KEY_LEFT_CONTROL)));
+    player_set_zooming(game->player, nu_get_key_state(game->window, GLFW_KEY_F));
+    player_rotate(game->player, nu_get_delta_mouse_x(game->window), -nu_get_delta_mouse_y(game->window));
+    player_update(game->player, game->world);
+    if (game->window->mouse_left && !game->window->last_mouse_left) {
+        player_break(game->player, game->world);
+    }
+    if (game->window->mouse_right && !game->window->last_mouse_right) {
+        player_place(game->player, game->world);
+    }
+    if (nu_get_key_pressed(game->window, GLFW_KEY_X)) {
+        game->debug = !game->debug;
+    }
 
-  // Update world so chunks load around player
-  int nx = (int)(floorf(game->player->position[0] / CHUNK_WIDTH));
-  int ny = (int)(floorf(game->player->position[1] / CHUNK_HEIGHT));
-  int nz = (int)(floorf(game->player->position[2] / CHUNK_LENGTH));
-  world_update_centre(game->world, nx, ny, nz);
+    // Update world so chunks load around player
+    int nx = (int)(floorf(game->player->position[0] / CHUNK_WIDTH));
+    int ny = (int)(floorf(game->player->position[1] / CHUNK_HEIGHT));
+    int nz = (int)(floorf(game->player->position[2] / CHUNK_LENGTH));
+    world_update_centre(game->world, nx, ny, nz);
 
-  // If not multithreaded, update the world from this thread
+    // If not multithreaded, update the world from this thread
 #ifndef MULTITHREAD
-  float time_budget = 1.f / 120.f;
-  float start_time = glfwGetTime();
-  do {
-    if (!world_update_queue(game->world))
-      break;
-  } while (glfwGetTime() - start_time < time_budget);
+    float time_budget = 1.f / 120.f;
+    float start_time = glfwGetTime();
+    do {
+        if (!world_update_queue(game->world)) {
+            break;
+        }
+    } while (glfwGetTime() - start_time < time_budget);
 #endif
 
-  game->frame_count++;
+    game->frame_count++;
 
-  nu_update_input(game->window);
+    nu_update_input(game->window);
 }
 
 static void debug_print(Game *game, char *str, float *cur_y) {
-  float width = (float)game->window->width;
-  float height = (float)game->window->height;
-  float size = 20.f;
-  float vertical_pad = 5.f;
-  *cur_y -= size;
-  *cur_y -= vertical_pad;
-  text_render_string(game->text_renderer, game->ui_renderer, 0, *cur_y, size, 10,
-                     width, height, str);
+    float width = (float)game->window->width;
+    float height = (float)game->window->height;
+    float size = 20.f;
+    float vertical_pad = 5.f;
+    *cur_y -= size;
+    *cur_y -= vertical_pad;
+    text_render_string(game->text_renderer, game->ui_renderer, 0, *cur_y, size, 10, width, height, str);
 }
 
 static void render_debug(Game *game) {
-  if (!game || !game->window)
-    return;
-  float cur_y = (float)game->window->height;
+    if (!game || !game->window) {
+        return;
+    }
+    float cur_y = (float)game->window->height;
 
-  // Render FPS counter
-  char str[1024];
-  sprintf(str, "fps: %d", (int)game->fps);
-  debug_print(game, str, &cur_y);
-
-  // Render time
-  sprintf(str, "time: %.2f", game->this_time);
-  debug_print(game, str, &cur_y);
-
-  // Render position
-  sprintf(str, "pos: %.2f, %.2f, %.2f", game->player->position[0],
-          game->player->position[1] - game->player->hitbox_dims[1] / 2.f,
-          game->player->position[2]);
-  debug_print(game, str, &cur_y);
-
-  // Chunk info
-  Chunk *chunk =
-      world_get_chunkf(game->world, game->player->position[0],
-                       game->player->position[1], game->player->position[2]);
-  sprintf(str, "chunk: %p", (void *)chunk);
-  debug_print(game, str, &cur_y);
-
-  if (chunk) {
-    sprintf(str, "  coords: %d, %d, %d", chunk->coords[0], chunk->coords[1],
-            chunk->coords[2]);
+    // Render FPS counter
+    char str[1024];
+    sprintf(str, "fps: %d", (int)game->fps);
     debug_print(game, str, &cur_y);
 
-    sprintf(str, "  num vertices: %zu", chunk->mesh ? chunk->mesh->last_send_size / chunk->mesh->stride : 0); 
+    // Render time
+    sprintf(str, "time: %.2f", game->this_time);
     debug_print(game, str, &cur_y);
-  }
+
+    // Render position
+    sprintf(str, "pos: %.2f, %.2f, %.2f", game->player->position[0],
+            game->player->position[1] - game->player->hitbox_dims[1] / 2.f, game->player->position[2]);
+    debug_print(game, str, &cur_y);
+
+    // Chunk info
+    Chunk *chunk =
+        world_get_chunkf(game->world, game->player->position[0], game->player->position[1], game->player->position[2]);
+    sprintf(str, "chunk: %p", (void *)chunk);
+    debug_print(game, str, &cur_y);
+
+    if (chunk) {
+        sprintf(str, "  coords: %d, %d, %d", chunk->coords[0], chunk->coords[1], chunk->coords[2]);
+        debug_print(game, str, &cur_y);
+
+        sprintf(str, "  num vertices: %zu", chunk->mesh ? chunk->mesh->last_send_size / chunk->mesh->stride : 0);
+        debug_print(game, str, &cur_y);
+    }
 }
 
 void render_game(Game *game) {
-  if (!game || !game->window)
-    return;
+    if (!game || !game->window) {
+        return;
+    }
 
-  float width = (float) game->window->width;
-  float height = (float) game->window->height;
-  float aspect = width / height;
+    float width = (float)game->window->width;
+    float height = (float)game->window->height;
+    float aspect = width / height;
 
-  // Render everything
-  nu_start_frame(game->window);
+    // Render everything
+    nu_start_frame(game->window);
 
-  // Render gradient sky background
-  render_sky(game->sky_renderer, height, game->player->camera->pitch,
-             game->player->camera->fov);
+    // Render gradient sky background
+    render_sky(game->sky_renderer, height, game->player->camera->pitch, game->player->camera->fov);
 
-  // Render world
-  render_world(game->world, game->player, aspect);
+    // Render world
+    render_world(game->world, game->player, aspect);
 
-  // Render clouds
-  render_clouds(game->clouds, game->player, game->this_time, aspect);
+    // Render clouds
+    render_clouds(game->clouds, game->player, game->this_time, aspect);
 
-  // Render crosshair
-  render_crosshair(game->crosshair, game->ui_renderer, width, height);
+    // Render crosshair
+    render_crosshair(game->crosshair, game->ui_renderer, width, height);
 
-  // Render block outline
-  render_outline(game->outline_renderer, game->player, width, height);
+    // Render block outline
+    render_outline(game->outline_renderer, game->player, width, height);
 
-  if (game->debug) {
-    render_debug(game);
-  }
+    if (game->debug) {
+        render_debug(game);
+    }
 
-  nu_end_frame(game->window);
+    nu_end_frame(game->window);
 }
 
 bool game_over(Game *game) {
-  if (!game)
-    return true;
-  return glfwWindowShouldClose(game->window->glfw_window);
+    if (!game) {
+        return true;
+    }
+    return glfwWindowShouldClose(game->window->glfw_window);
 }

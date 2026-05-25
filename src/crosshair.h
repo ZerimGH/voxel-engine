@@ -6,7 +6,7 @@
 #include "ui_renderer.h"
 
 typedef struct {
-  nu_Texture *texture;
+    nu_Texture *texture;
 } Crosshair;
 
 Crosshair *create_crosshair(void);

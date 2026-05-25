@@ -3,20 +3,19 @@
 #define SKY_H
 
 // Includes
-#include "nuGL.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "nuGL.h"
 
 // Structs
 typedef struct {
-  nu_Program *program;
-  nu_Mesh *mesh;
+    nu_Program *program;
+    nu_Mesh *mesh;
 } SkyRenderer;
 
 // Function prototypes
 SkyRenderer *create_sky_renderer(void);
-void render_sky(SkyRenderer *renderer, float screen_height, float pitch,
-                float fov);
+void render_sky(SkyRenderer *renderer, float screen_height, float pitch, float fov);
 void destroy_sky_renderer(SkyRenderer **renderer);
 
 #endif

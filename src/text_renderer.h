@@ -2,23 +2,21 @@
 
 #define TEXT_RENDERER_H
 
-#include "nuGL.h"
-#include "ui_renderer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "nuGL.h"
+#include "ui_renderer.h"
 
 typedef struct {
-  nu_Texture *texture;
+    nu_Texture *texture;
 } TextRenderer;
 
 TextRenderer *create_text_renderer(void);
 void destroy_text_renderer(TextRenderer **text);
-void text_render_number(TextRenderer *text, UiRenderer *ui, float x, float y,
-                        float size, float padding, float screen_width,
-                        float screen_height, int n);
-void text_render_string(TextRenderer *text, UiRenderer *ui, float x, float y,
-                        float size, float padding, float screen_width,
-                        float screen_height, char *str);
+void text_render_number(TextRenderer *text, UiRenderer *ui, float x, float y, float size, float padding,
+                        float screen_width, float screen_height, int n);
+void text_render_string(TextRenderer *text, UiRenderer *ui, float x, float y, float size, float padding,
+                        float screen_width, float screen_height, char *str);
 
 #endif
