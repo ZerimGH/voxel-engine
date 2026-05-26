@@ -20,6 +20,8 @@ Shift: Crouch
 
 Ctrl: Sprint
 
+Space: Jump
+
 X: Show debug overlay
 
 Left click: Place a block
