@@ -1,5 +1,7 @@
 #include "world.h"
 #include "player.h"
+#include <pthread.h>
+#include <unistd.h>
 
 static void world_load_chunks(World *world);
 static ChunkNode *hashmap_get(World *world, int x, int y, int z);
@@ -9,39 +11,30 @@ static inline void world_lock_bucket(World *world, size_t bucket) {
     if (!world || bucket >= HASHMAP_SIZE) {
         return;
     }
-#ifdef MULTITHREAD
     pthread_mutex_lock(&world->map.bucket_mutexes[bucket]);
-#endif
 }
 
 static inline void world_unlock_bucket(World *world, size_t bucket) {
     if (!world || bucket >= HASHMAP_SIZE) {
         return;
     }
-#ifdef MULTITHREAD
     pthread_mutex_unlock(&world->map.bucket_mutexes[bucket]);
-#endif
 }
 
 static inline void world_lock_queue(World *world) {
     if (!world) {
         return;
     }
-#ifdef MULTITHREAD
     pthread_mutex_lock(&world->queue_mutex);
-#endif
 }
 
 static inline void world_unlock_queue(World *world) {
     if (!world) {
         return;
     }
-#ifdef MULTITHREAD
     pthread_mutex_unlock(&world->queue_mutex);
-#endif
 }
 
-#ifdef MULTITHREAD
 void *thread_routine(void *arg) {
     World *world = (World *)arg;
     if (!world) {
@@ -54,7 +47,6 @@ void *thread_routine(void *arg) {
     }
     return NULL;
 }
-#endif
 
 World *create_world(uint32_t world_seed) {
     // Create the world's shader program
@@ -93,7 +85,6 @@ World *create_world(uint32_t world_seed) {
     world->queue.items_alloced = 0;
     world->queue.num_items = 0;
 
-#ifdef MULTITHREAD
     for (size_t i = 0; i < NUM_THREADS; i++) {
         pthread_create(&world->chunk_threads[i], NULL, thread_routine, (void *)world);
     }
@@ -103,7 +94,6 @@ World *create_world(uint32_t world_seed) {
     }
     pthread_mutex_init(&world->queue_mutex, NULL);
     world->kill = false;
-#endif
 
     // Set world centre and render distance
     world->cx = 0;
@@ -127,7 +117,6 @@ void destroy_world(World **world) {
     nu_destroy_program(&(*world)->program);
     nu_destroy_texture(&(*world)->block_textures);
 
-#ifdef MULTITHREAD
     // Stop thread on world destroyed
     (*world)->kill = true;
     for (size_t i = 0; i < NUM_THREADS; i++) {
@@ -138,7 +127,6 @@ void destroy_world(World **world) {
         pthread_mutex_destroy(&(*world)->map.bucket_mutexes[i]);
     }
     pthread_mutex_destroy(&(*world)->queue_mutex);
-#endif
 
     // Destroy every loaded chunk
     for (size_t i = 0; i < HASHMAP_SIZE; i++) {

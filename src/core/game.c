@@ -219,17 +219,6 @@ void update_game(Game *game) {
     int nz = (int)(floorf(game->player->position[2] / CHUNK_LENGTH));
     world_update_centre(game->world, nx, ny, nz);
 
-    // If not multithreaded, update the world from this thread
-#ifndef MULTITHREAD
-    float time_budget = 1.f / 120.f;
-    float start_time = glfwGetTime();
-    do {
-        if (!world_update_queue(game->world)) {
-            break;
-        }
-    } while (glfwGetTime() - start_time < time_budget);
-#endif
-
     game->frame_count++;
 
     nu_update_input(game->window);

@@ -4,7 +4,6 @@
 
 #include "block.h"
 #include "chunk.h"
-#include "defines.h"
 #include "nuGL.h"
 
 #include <cglm/cglm.h>
@@ -12,12 +11,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef MULTITHREAD
 #include <pthread.h>
-#include <unistd.h>
+
 #define NUM_THREADS 1
-#endif
 
 #define HASHMAP_SIZE    4096
 
@@ -52,13 +48,11 @@ typedef struct {
     int cx, cy, cz;             // the centre of the world (where chunks load around)
     Queue queue;                // Queue of chunk coordinates to be generated and meshed
     uint32_t seed;              // World seed
-#ifdef MULTITHREAD
     pthread_t chunk_threads[NUM_THREADS]; // The threads that will generate and mesh chunks
     // pthread_mutex_t hashmap_mutex; // Mutex protecting hashmap lookups /
     // insertions
     pthread_mutex_t queue_mutex; // Mutex protecting pushing and popping from the queue
     volatile bool kill;          // Flag to kill the threads
-#endif
 } World;
 
 typedef struct {

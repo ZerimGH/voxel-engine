@@ -15,12 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "block.h"
-#include "defines.h"
 #include "nuGL.h"
-
-#ifdef MULTITHREAD
 #include <pthread.h>
-#endif
 
 typedef enum { STATE_EMPTY, STATE_NEEDS_MESH, STATE_NEEDS_SEND, STATE_DONE } ChunkState;
 
@@ -30,9 +26,7 @@ typedef struct {
     Block *blocks;
     nu_Mesh *mesh;
     ChunkState state;
-#ifdef MULTITHREAD
     pthread_mutex_t chunk_mutex;
-#endif
 } Chunk;
 
 // Function prototypes

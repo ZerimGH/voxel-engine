@@ -1,3 +1,175 @@
+#include "chunk.h"
+
+#include "profiler.h"
+#include "noise.h"
+
+typedef struct {
+    GLfloat pos[3];
+    GLfloat tex[2];
+    GLint side_index;
+    GLint block_type;
+} Vertex;
+
+// 32 * 7 = 224 bytes per vertex
+// thats kinda crazy
+// Could send uniform chunk pos and use only 1 byte for each block offset
+// 3 bytes pos
+// Texcoords could be only one bit (only 0 or 1)
+// 2 bits tex
+// Side index only needs up to 6, so 3 bits
+// 3 bits side index
+// Block type depends how many blocks there are, so could use a byte
+// one byte side index
+// So 4.625 bytes per vertex
+// Or 37 bits per vertex
+// Probably needs to be padded up to 5 bytes
+// Can only pass as low as 4 bytes tho, so 8 bytes
+
+size_t vertex_num = 4;
+size_t vertex_sizes[] = {sizeof(GLfloat), sizeof(GLfloat), sizeof(GLint), sizeof(GLint)};
+size_t vertex_counts[] = {3, 2, 1, 1};
+GLenum vertex_types[] = {GL_FLOAT, GL_FLOAT, GL_INT, GL_INT};
+
+Chunk *create_chunk(int chunk_x, int chunk_y, int chunk_z) {
+    Chunk *chunk = calloc(1, sizeof(Chunk));
+    if (!chunk) {
+        fprintf(stderr,
+                "(create_chunk): Couldn't create chunk at position (%d, %d, %d), "
+                "calloc failed.\n",
+                chunk_x, chunk_y, chunk_z);
+        return NULL;
+    }
+    chunk->coords[0] = chunk_x;
+    chunk->coords[1] = chunk_y;
+    chunk->coords[2] = chunk_z;
+    chunk->blocks = NULL;
+    chunk->mesh = nu_create_mesh(vertex_num, vertex_sizes, vertex_counts, vertex_types);
+    chunk->state = STATE_EMPTY;
+    pthread_mutex_init(&chunk->chunk_mutex, NULL);
+    return chunk;
+}
+
+void lock_chunk(Chunk *chunk) {
+    if (!chunk) {
+        return;
+    }
+    pthread_mutex_lock(&chunk->chunk_mutex);
+}
+
+void unlock_chunk(Chunk *chunk) {
+    if (!chunk) {
+        return;
+    }
+    pthread_mutex_unlock(&chunk->chunk_mutex);
+}
+
+void destroy_chunk(Chunk **chunk) {
+    if (!chunk || !(*chunk)) {
+        return;
+    }
+    lock_chunk(*chunk);
+    if ((*chunk)->mesh) {
+        nu_destroy_mesh(&(*chunk)->mesh);
+    }
+    if ((*chunk)->blocks) {
+        free((*chunk)->blocks);
+        (*chunk)->blocks = NULL;
+    }
+    unlock_chunk(*chunk);
+    pthread_mutex_destroy(&(*chunk)->chunk_mutex);
+    *chunk = NULL;
+}
+
+bool chunk_set_block(Chunk *chunk, BlockType block, size_t x, size_t y, size_t z) {
+    if (!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) {
+        return false;
+    }
+    if (!chunk->blocks || chunk->state == STATE_EMPTY) {
+        return false;
+    }
+    chunk->blocks[CHUNK_INDEX(x, y, z)] = (Block){.type = block};
+    return true;
+}
+
+Block *chunk_get_block(Chunk *chunk, size_t x, size_t y, size_t z) {
+    if (!chunk || x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH) {
+        return NULL;
+    }
+    if (!chunk->blocks || chunk->state == STATE_EMPTY) {
+        return NULL;
+    }
+    return &chunk->blocks[CHUNK_INDEX(x, y, z)];
+}
+
+void generate_chunk(Chunk *chunk, uint32_t seed) {
+    if (!chunk) {
+        return;
+    }
+    ChunkState state = chunk->state;
+    if (state != STATE_EMPTY) {
+        return;
+    }
+    if (chunk->blocks) {
+        free(chunk->blocks);
+    }
+    chunk->blocks = calloc(CHUNK_VOLUME, sizeof(Block));
+    if (!chunk->blocks) {
+        fprintf(stderr,
+                "(generate_chunk): Couldn't generate chunk at coords (%d, %d, %d), "
+                "calloc failed.\n",
+                chunk->coords[0], chunk->coords[1], chunk->coords[2]);
+        return;
+    }
+
+    static float heightmap[CHUNK_AREA];
+    static float sandmap[CHUNK_AREA];
+
+    int ccx = chunk->coords[0] * CHUNK_WIDTH;
+    int ccy = chunk->coords[1] * CHUNK_HEIGHT;
+    int ccz = chunk->coords[2] * CHUNK_LENGTH;
+
+    for (size_t x = 0; x < CHUNK_WIDTH; x++) {
+        int gx = ccx + x;
+        for (size_t z = 0; z < CHUNK_LENGTH; z++) {
+            int gz = ccz + z;
+            float height_val = octave_noise_2d(gx, gz, 5, 0.3, 1.7, 256, seed);
+            height_val = height_val / 2.f + 0.5f;
+            height_val = height_val * 100;
+            heightmap[CHUNK_INDEX(x, 0, z)] = height_val;
+            float sand_val = octave_noise_2d(gx, gz, 1, 1.f, 1.f, 128, seed + 10);
+            sandmap[CHUNK_INDEX(x, 0, z)] = sand_val;
+        }
+    }
+
+    for (size_t x = 0; x < CHUNK_WIDTH; x++) {
+        for (size_t z = 0; z < CHUNK_LENGTH; z++) {
+            float height_val = heightmap[CHUNK_INDEX(x, 0, z)];
+            float sand_val = sandmap[CHUNK_INDEX(x, 0, z)];
+            if (ccy > height_val) {
+                continue;
+            }
+            for (size_t y = 0; y < CHUNK_HEIGHT; y++) {
+                int gy = ccy + y;
+                BlockType block = BlockAir;
+                if (gy <= height_val) {
+                    int dist_from_surface = height_val - gy;
+                    if (dist_from_surface == 0) {
+                        block = sand_val < 0 ? BlockSand : BlockGrass;
+                    } else if (dist_from_surface <= 5) {
+                        block = sand_val < 0 ? BlockSand : BlockDirt;
+                    } else {
+                        block = BlockStone;
+                    }
+                }
+                size_t idx = CHUNK_INDEX(x, y, z);
+                chunk->blocks[idx] = (Block){.type = block};
+            }
+        }
+    }
+
+    chunk->state = STATE_NEEDS_MESH;
+}
+
 static const int axis_uv[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 static const int dims[3] = {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_LENGTH};
 

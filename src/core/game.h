@@ -10,7 +10,6 @@
 #include "camera.h"
 #include "clouds.h"
 #include "crosshair.h"
-#include "defines.h"
 #include "nuGL.h"
 #include "outline.h"
 #include "player.h"

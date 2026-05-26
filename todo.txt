@@ -1,5 +1,6 @@
 LONG TERM (im putting these off):
-  - Block lighting (BFS / Djikstras)
+  - Block lighting
+  - Ambient occlusion (Not sure if doable with greedy meshing)
   - Chunk saving / Loading
   - Entities, player model, animations
 
@@ -10,6 +11,7 @@ SHORT TERM (i will do these soon):
     through the mesh)
   - Lower memory usage (represent block types as uint8_t, optimise mesh
     lifetime, maybe even some vertex packing)
+  - Windows build
 
 RIGHT NOW (i am working on this):
   - Better terrain generation (biomes, trees, ores)

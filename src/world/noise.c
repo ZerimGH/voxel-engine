@@ -103,6 +103,7 @@ float noise_3d(float x, float y, float z, int res, uint32_t seed) {
 }
 
 // Layer 3D noise with varying amplitudes and frequencies
+// This is really slow, maybe theres a better way to do it?
 float octave_noise_3d(float x, float y, float z, int octaves, float persistence, float lacunarity, int base_res,
                       uint32_t seed) {
     float total = 0.0f, frequency = 1.0f, amplitude = 1.0f, maxValue = 0.0f;
