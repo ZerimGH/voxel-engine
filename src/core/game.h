@@ -2,11 +2,6 @@
 
 #define GAME_H
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include "camera.h"
 #include "clouds.h"
 #include "crosshair.h"
@@ -17,21 +12,26 @@
 #include "text_renderer.h"
 #include "ui_renderer.h"
 #include "world.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 typedef struct {
-    nu_Window *window;
-    SkyRenderer *sky_renderer;
-    Player *player;
-    World *world;
-    UiRenderer *ui_renderer;
-    TextRenderer *text_renderer;
-    Crosshair *crosshair;
-    Clouds *clouds;
-    OutlineRenderer *outline_renderer;
-    float this_time, last_time, delta_time;
-    size_t frame_count;
-    size_t fps;
-    bool debug;
+  nu_Window *window;
+  SkyRenderer *sky_renderer;
+  Player *player;
+  World *world;
+  UiRenderer *ui_renderer;
+  TextRenderer *text_renderer;
+  Crosshair *crosshair;
+  Clouds *clouds;
+  OutlineRenderer *outline_renderer;
+  float this_time, last_time, delta_time;
+  size_t frame_count;
+  size_t fps;
+  bool debug;
 } Game;
 
 Game *create_game(void);

@@ -2,31 +2,36 @@
 
 #define CHUNK_H
 
-#define CHUNK_WIDTH          32
-#define CHUNK_HEIGHT         32
-#define CHUNK_LENGTH         32
+#define CHUNK_WIDTH 32
+#define CHUNK_HEIGHT 32
+#define CHUNK_LENGTH 32
 
-#define CHUNK_AREA           (CHUNK_WIDTH * CHUNK_LENGTH)
-#define CHUNK_VOLUME         (CHUNK_AREA * CHUNK_HEIGHT)
+#define CHUNK_AREA (CHUNK_WIDTH * CHUNK_LENGTH)
+#define CHUNK_VOLUME (CHUNK_AREA * CHUNK_HEIGHT)
 
 #define CHUNK_INDEX(x, y, z) ((z) + (x) * CHUNK_LENGTH + (y) * CHUNK_AREA)
 
 // Includes
-#include <stdio.h>
-#include <stdlib.h>
 #include "block.h"
 #include "nuGL.h"
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-typedef enum { STATE_EMPTY, STATE_NEEDS_MESH, STATE_NEEDS_SEND, STATE_DONE } ChunkState;
+typedef enum {
+  STATE_EMPTY,
+  STATE_NEEDS_MESH,
+  STATE_NEEDS_SEND,
+  STATE_DONE
+} ChunkState;
 
 // Structs
 typedef struct {
-    int coords[3];
-    Block *blocks;
-    nu_Mesh *mesh;
-    ChunkState state;
-    pthread_mutex_t chunk_mutex;
+  int coords[3];
+  Block *blocks;
+  nu_Mesh *mesh;
+  ChunkState state;
+  pthread_mutex_t chunk_mutex;
 } Chunk;
 
 // Function prototypes

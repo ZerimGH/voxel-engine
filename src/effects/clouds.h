@@ -2,15 +2,15 @@
 
 #define CLOUDS_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "nuGL.h"
 #include "player.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef struct {
-    nu_Program *program;
-    nu_Texture *texture;
-    nu_Mesh *mesh;
+  nu_Program *program;
+  nu_Texture *texture;
+  nu_Mesh *mesh;
 } Clouds;
 
 Clouds *create_clouds(void);

@@ -10,36 +10,36 @@
 #include "world.h"
 
 typedef struct {
-    // Player's camera
-    Camera *camera;
-    // Size of the players hitbox, in blocks
-    vec3 hitbox_dims;
-    // Player's position, in blocks
-    vec3 position;
-    // Player's velocity, in blocks per second
-    vec3 velocity;
-    // Accumulates movement directions so they can be normalised
-    vec3 movement;
+  // Player's camera
+  Camera *camera;
+  // Size of the players hitbox, in blocks
+  vec3 hitbox_dims;
+  // Player's position, in blocks
+  vec3 position;
+  // Player's velocity, in blocks per second
+  vec3 velocity;
+  // Accumulates movement directions so they can be normalised
+  vec3 movement;
 
-    // Track if the player is on the ground
-    bool grounded;
-    bool last_grounded;
+  // Track if the player is on the ground
+  bool grounded;
+  bool last_grounded;
 
-    // Movement flags
-    bool is_crouching;
-    bool is_sprinting;
-    bool is_jumping;
-    bool keep_sprint;
-    bool is_zooming;
-    float jump_time;
+  // Movement flags
+  bool is_crouching;
+  bool is_sprinting;
+  bool is_jumping;
+  bool keep_sprint;
+  bool is_zooming;
+  float jump_time;
 
-    // Interpolation for animations
-    float sprint_interp;
-    float crouch_interp;
-    float zoom_interp;
+  // Interpolation for animations
+  float sprint_interp;
+  float crouch_interp;
+  float zoom_interp;
 
-    float dt;                // Deltatime, should be set each frame
-    RayCastReturn selection; // The block that the player is looking at
+  float dt;                // Deltatime, should be set each frame
+  RayCastReturn selection; // The block that the player is looking at
 } Player;
 
 // Create a player

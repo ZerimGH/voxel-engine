@@ -2,16 +2,16 @@
 
 #define CAMERA_H
 
+#include "cglm/cglm.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "cglm/cglm.h"
 
 typedef struct {
-    vec3 position;
-    float yaw, pitch;
-    float fov;
-    float near, far;
+  vec3 position;
+  float yaw, pitch;
+  float fov;
+  float near, far;
 } Camera;
 
 // function prototypes

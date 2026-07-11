@@ -2,22 +2,23 @@
 #define OUTLINE_H
 
 // Includes
-#include <stdio.h>
-#include <stdlib.h>
 #include "camera.h"
 #include "nuGL.h"
 #include "player.h"
 #include "world.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 // Structs
 typedef struct {
-    nu_Program *program;
-    nu_Mesh *mesh;
+  nu_Program *program;
+  nu_Mesh *mesh;
 } OutlineRenderer;
 
 // Function prototypes
 OutlineRenderer *create_outline_renderer(void);
 void destroy_outline_renderer(OutlineRenderer **outline);
-void render_outline(OutlineRenderer *outline, Player *player, float width, float height);
+void render_outline(
+    OutlineRenderer *outline, Player *player, float width, float height);
 
 #endif // outline.h
