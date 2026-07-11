@@ -30,5 +30,5 @@ run: $(TARGET)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(TARGET): $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $(TARGET)
+	$(LD) $(OBJS) $(LDFLAGS) -o $(TARGET)
 
