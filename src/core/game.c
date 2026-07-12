@@ -9,6 +9,8 @@
 
 #define FPS_RESET_FRAMES 5
 
+#define VSYNC 0
+
 Game *create_game(void) {
   char err_msg[1024]                = {0};
   nu_Window *window                 = NULL;
@@ -32,7 +34,7 @@ Game *create_game(void) {
   }
 
   glfwSetInputMode(window->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  glfwSwapInterval(1);
+  glfwSwapInterval(VSYNC);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
