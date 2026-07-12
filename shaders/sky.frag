@@ -14,7 +14,7 @@ void main() {
 
   float horizon = 0.5 - 0.5 * tan(cameraPitch) / tan(radians(cameraFOV) * 0.5);
 
-  float grad = 15.0 * tan(radians(cameraFOV) * 0.5);
+  float grad = 5.0 * tan(radians(cameraFOV) * 0.5);
 
   float t = clamp((yNorm - horizon) * grad, 0.0, 1.0);
 
