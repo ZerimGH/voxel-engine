@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define NUM_THREADS 1
+#define NUM_THREADS 2 
 
 #define HASHMAP_SIZE 4096
 

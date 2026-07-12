@@ -110,8 +110,8 @@ void generate_chunk(Chunk *chunk, uint32_t seed) {
     return;
   }
 
-  static float heightmap[CHUNK_AREA];
-  static float sandmap[CHUNK_AREA];
+  float heightmap[CHUNK_AREA];
+  float sandmap[CHUNK_AREA];
 
   int ccx = chunk->coords[0] * CHUNK_WIDTH;
   int ccy = chunk->coords[1] * CHUNK_HEIGHT;
