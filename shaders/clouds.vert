@@ -9,8 +9,12 @@ uniform vec3 uOff;
 uniform mat4 uMVP;
 
 out vec2 fTex;
+out vec2 fWorldPos;
 
 void main() {
-  gl_Position = uMVP * vec4(vec3(aPos * uScale + uOff), 1.0);
+  vec3 worldPos = aPos * uScale + uOff;
+  gl_Position = uMVP * vec4(worldPos, 1.0);
   fTex = vec2(uOff.x - uTime, uOff.z) / (2 * uScale) + aTex;
+
+  fWorldPos = worldPos.xz; 
 }

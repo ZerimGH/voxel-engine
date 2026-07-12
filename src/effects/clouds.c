@@ -1,4 +1,6 @@
 #include "clouds.h"
+#include "world.h"
+#include "chunk.h"
 
 #define CLOUDS_SCALE 8192.f
 #define CLOUDS_HEIGHT 200.f
@@ -28,6 +30,8 @@ Clouds *create_clouds(void) {
   nu_register_uniform(program, "uTime", GL_FLOAT);
   nu_register_uniform(program, "uOff", GL_FLOAT_VEC3);
   nu_register_uniform(program, "uMVP", GL_FLOAT_MAT4);
+  nu_register_uniform(program, "uPlayerPos", GL_FLOAT_VEC3);
+  nu_register_uniform(program, "uRenderDistance", GL_FLOAT);
   int slot = 0;
   nu_set_uniform(program, "uTexture", &slot);
   float scale = CLOUDS_SCALE;
@@ -94,8 +98,11 @@ void render_clouds(Clouds *clouds, Player *player, float time, float aspect) {
   if (!clouds || !player) { return; }
   // Set uniforms
   float off[3] = {player->position[0], CLOUDS_HEIGHT, player->position[2]};
+  float render_dist = RENDER_DISTANCE * CHUNK_WIDTH;
   nu_set_uniform(clouds->program, "uOff", off);
   nu_set_uniform(clouds->program, "uTime", &time);
+  nu_set_uniform(clouds->program, "uPlayerPos", player->position);
+  nu_set_uniform(clouds->program, "uRenderDistance", &render_dist);
   float old_near      = player->camera->near;
   float old_far       = player->camera->far;
   // player->camera->near = 10.f;
@@ -111,5 +118,4 @@ void render_clouds(Clouds *clouds, Player *player, float time, float aspect) {
   nu_bind_texture(clouds->texture, 0);
   nu_use_program(clouds->program);
   nu_render_mesh(clouds->mesh);
-  // TODO
 }
