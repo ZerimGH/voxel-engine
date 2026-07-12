@@ -11,7 +11,7 @@ uniform float uRenderDistance;
 void main() {
   vec4 col = texture(uTexture, fTex);
 
-  float pRenderDistance = uRenderDistance * 8;
+  float pRenderDistance = uRenderDistance * 4;
   
   float fog_near = pRenderDistance / 2.f;
   float fog_far = pRenderDistance;

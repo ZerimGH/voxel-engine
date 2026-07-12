@@ -7,18 +7,16 @@ uniform float cameraPitch;
 uniform float cameraFOV;
 
 void main() {
-  vec3 topColor = vec3(0.45, 0.57, 0.895);
-  vec3 bottomColor = vec3(0.603, 0.761, 0.965);
+  vec3 topColor = vec3(0.45,0.57,0.895);
+  vec3 bottomColor = vec3(0.603,0.761,0.965);
 
-  float ndcY = (gl_FragCoord.y / screenHeight) * 2.0 - 1.0;
+  float yNorm = gl_FragCoord.y / screenHeight;
 
-  float halfFovRad = radians(cameraFOV) * 0.5;
-  float pixelAngleOffset = atan(ndcY * tan(halfFovRad));
+  float horizon = 0.5 - 0.5 * tan(cameraPitch) / tan(radians(cameraFOV) * 0.5);
 
-  float worldAngle = cameraPitch + pixelAngleOffset;
+  float grad = 15.0;
+  float t = clamp((yNorm - horizon) * grad, 0.0, 1.0);
 
-  float gradientT = clamp(worldAngle * 5.0, 0.0, 1.0);
-
-  vec3 color = mix(bottomColor, topColor, gradientT);
+  vec3 color = mix(bottomColor, topColor, t);
   FragColor = vec4(color, 1.0);
 }
