@@ -247,15 +247,17 @@ void render_world(World *world, void *p, float aspect) {
 
   // Set OpenGL parameters
   glEnable(GL_DEPTH_TEST);
-#ifdef GREEDY
-  glDisable(GL_CULL_FACE); // Greedy meshing bug isnt visible without backface
-#else                      // culling
   glEnable(GL_CULL_FACE);
-#endif
 
-  // Use and upload VP matrix to program
+  // Get camera's VP matrix
   mat4 vp;
   camera_calculate_vp_matrix(player->camera, vp, aspect);
+
+  // Calculate frustum planes for frustum culling
+  vec4 planes[6] = {0};
+  glm_frustum_planes(vp, planes);
+
+  // Use world's program shader and send vp matrix
   nu_use_program(world->program);
   nu_set_uniform(world->program, "uMVP", &vp[0][0]);
   nu_bind_texture(world->block_textures, 0);
@@ -275,8 +277,20 @@ void render_world(World *world, void *p, float aspect) {
           nu_free_mesh(chunk->mesh);
           chunk->state = STATE_DONE;
         }
+
+        // Frustum culling
+        int visible = 1;
+
+        float ccx = chunk->coords[0] * CHUNK_WIDTH;
+        float ccy = chunk->coords[1] * CHUNK_HEIGHT;
+        float ccz = chunk->coords[2] * CHUNK_LENGTH;
+
+        vec3 box[2] = {{ccx, ccy, ccz},
+            {ccx + CHUNK_WIDTH, ccy + CHUNK_HEIGHT, ccz + CHUNK_LENGTH}};
+        if (!glm_aabb_frustum(box, planes)) visible = 0;
+
         // Render
-        nu_render_mesh(chunk->mesh);
+        if (visible) nu_render_mesh(chunk->mesh);
         unlock_chunk(chunk);
       }
       node = next;
