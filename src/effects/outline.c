@@ -1,5 +1,7 @@
 #include "outline.h"
 
+#define OFFSET 0.001
+
 typedef struct {
   GLfloat pos[3];
 } OutlineVertex;
@@ -33,47 +35,27 @@ OutlineRenderer *create_outline_renderer(void) {
         "nu_create_mesh() returned NULL.\n");
     return NULL;
   }
+
+  GLfloat min = -OFFSET;
+  GLfloat max = 1.0f + OFFSET;
+
   OutlineVertex vertices[] = {
-      // front face (z = 0)
-      {{0, 0, 0}},
-      {{1, 0, 0}},
-      {{1, 0, 0}},
-      {{1, 1, 0}},
-      {{1, 1, 0}},
-      {{0, 1, 0}},
-      {{0, 1, 0}},
-      {{0, 0, 0}},
+    {{min, min, min}}, {{max, min, min}},
+    {{max, min, min}}, {{max, min, max}},
+    {{max, min, max}}, {{min, min, max}},
+    {{min, min, max}}, {{min, min, min}},
 
-      // back face (z = 1)
-      {{0, 0, 1}},
-      {{1, 0, 1}},
-      {{1, 0, 1}},
-      {{1, 1, 1}},
-      {{1, 1, 1}},
-      {{0, 1, 1}},
-      {{0, 1, 1}},
-      {{0, 0, 1}},
+    {{min, max, min}}, {{max, max, min}},
+    {{max, max, min}}, {{max, max, max}},
+    {{max, max, max}}, {{min, max, max}},
+    {{min, max, max}}, {{min, max, min}},
 
-      // left face (x = 0)
-      {{0, 0, 0}},
-      {{0, 0, 1}},
-      {{0, 0, 1}},
-      {{0, 1, 1}},
-      {{0, 1, 1}},
-      {{0, 1, 0}},
-      {{0, 1, 0}},
-      {{0, 0, 0}},
-
-      // right face (x = 1)
-      {{1, 0, 0}},
-      {{1, 0, 1}},
-      {{1, 0, 1}},
-      {{1, 1, 1}},
-      {{1, 1, 1}},
-      {{1, 1, 0}},
-      {{1, 1, 0}},
-      {{1, 0, 0}},
+    {{min, min, min}}, {{min, max, min}},
+    {{max, min, min}}, {{max, max, min}},
+    {{max, min, max}}, {{max, max, max}},
+    {{min, min, max}}, {{min, max, max}}
   };
+
   nu_mesh_add_bytes(mesh, sizeof(vertices), vertices);
   nu_send_mesh(mesh);
   nu_free_mesh(mesh);
@@ -108,8 +90,8 @@ void render_outline(
   if (!outline || !player) { return; }
   // Set uniforms
   GLfloat uPos[3] = {(GLfloat)player->selection.hit_x,
-      (GLfloat)player->selection.hit_y,
-      (GLfloat)player->selection.hit_z};
+    (GLfloat)player->selection.hit_y,
+    (GLfloat)player->selection.hit_z};
   GLint uActive   = player->selection.hit;
   mat4 vp;
   camera_calculate_vp_matrix(player->camera, vp, width / height);
@@ -118,9 +100,9 @@ void render_outline(
   nu_set_uniform(outline->program, "uActive", &uActive);
   nu_set_uniform(outline->program, "uMVP", &vp[0][0]);
 
-  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
-  glLineWidth(5.f);
+  glLineWidth(2.f);
 
   nu_use_program(outline->program);
   nu_render_mesh(outline->mesh);
